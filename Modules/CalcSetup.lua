@@ -430,6 +430,12 @@ function calcs.initEnv(build, mode, override)
 		end
 	end
 	
+	if override.addMods then
+		for _, mod in pairs(override.addMods) do
+			modDB:NewMod(unpack(mod))
+		end
+	end
+
 	if env.mode == "MAIN" then
 		-- Process extra skills granted by items
 		local markList = wipeTable(tempTable1)

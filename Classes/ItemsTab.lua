@@ -243,7 +243,6 @@ If there's 2 slots an item can go in, holding Shift will put it in the second.]]
 	self.controls.statWeightsCalc = common.New("ButtonControl", {"TOPLEFT", self.controls.craftDisplayItem, "BOTTOMLEFT"}, 0, 470, 120, 20, "Calculate Weights", function()
 		self:CalcStatWeights()
 	end)
-	self.CalcStatWeights = function(self) end;
 	-- Display item
 	self.displayItemTooltip = common.New("Tooltip")
 	self.displayItemTooltip.maxWidth = 458
@@ -1311,6 +1310,41 @@ function ItemsTabClass:CraftItem()
 		main:ClosePopup()
 	end)
 	main:OpenPopup(370, 130, "Craft Item", controls)
+end
+
+function ItemsTabClass:CalcStatWeights()
+	local calcFunc, calcBase = self.build.calcsTab:GetMiscCalculator()
+	local basestats = {
+		["+1% to Global Critical Strike Multiplier"] = {{"CritMultiplier", "BASE", 1}},
+		["1% increased Attack Speed"] ={{"Speed", "INC", 1}},
+		["Adds 1 to 1 Cold Damage to Attacks"] = {{"ColdMin", "BASE", 1}, {"ColdMax", "BASE", 1}},
+		["Adds 1 to 1 Fire Damage to Attacks"] = {{"FireMin", "BASE", 1}, {"FireMax", "BASE", 1}},
+		["Adds 1 to 1 Lightning Damage to Attacks"] = {{"LightningMin", "BASE", 1}, {"LightningMax", "BASE", 1}},
+		["Adds 1 to 1 Physical Damage to Attacks"] = {{"PhysicalMin", "BASE", 1}, {"PhysicalMax", "BASE", 1}},
+		["Damage Penetrates 1% Elemental Resistance"] = {{"ElementalPenetration", "BASE", 1}},
+		["Gain 1% of Physical Damage as Extra Fire Damage"] = {{"PhysicalDamageGainAsFire", "BASE", 1}},
+		["1% increased Cold Damage"] ={{"ColdDamage", "INC", 1}},
+		["1% increased Damage"] ={{"Damage", "INC", 1}},
+	}
+	local item = nil;
+	local controls = { }
+	local outstr = "";
+	local modDB = self.build.calcsTab.mainEnv.modDB
+	local output = self.build.calcsTab.mainOutput
+	local function buildRaw (stat)
+		return "Rarity: Rare\nTmp\nCrimson Jewel\n"..stat;
+	end
+	for k, v in pairs(basestats) do
+		output = calcFunc({addMods = v})
+		outstr = outstr..k..": "..tostring(math.floor(output.TotalDPS-calcBase.TotalDPS+0.5)).."\n";
+	end
+	controls.edit = common.New("EditControl", nil, 0, 40, 480, 420, "", nil, "^%C\t\n", nil, nil, 14)
+	controls.edit:SetText("Stat Weights go here:\n"..outstr..calcBase.TotalDPS.."\n"..output.TotalDPS)
+	controls.edit.font = "FIXED"
+	controls.cancel = common.New("ButtonControl", nil, 0, 470, 80, 20, "Cancel", function()
+		main:ClosePopup()
+	end)
+	main:OpenPopup(500, 500, "Stat Weights", controls, nil, "edit")
 end
 
 -- Opens the item text editor popup
