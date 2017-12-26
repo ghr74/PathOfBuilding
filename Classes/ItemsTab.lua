@@ -240,7 +240,10 @@ You can Control + Click an item to equip it, or drag it onto the slot.
 This will also add it to your build if it's from the unique/template list.
 If there's 2 slots an item can go in, holding Shift will put it in the second.]])
 	self.controls.sharedItemList = common.New("SharedItemList", {"TOPLEFT",self.controls.craftDisplayItem, "BOTTOMLEFT"}, 0, 142, 360, 308, self)
-
+	self.controls.statWeightsCalc = common.New("ButtonControl", {"TOPLEFT", self.controls.craftDisplayItem, "BOTTOMLEFT"}, 0, 470, 120, 20, "Calculate Weights", function()
+		self:CalcStatWeights()
+	end)
+	self.CalcStatWeights = function(self) end;
 	-- Display item
 	self.displayItemTooltip = common.New("Tooltip")
 	self.displayItemTooltip.maxWidth = 458
