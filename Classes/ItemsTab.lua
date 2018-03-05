@@ -1316,6 +1316,7 @@ function ItemsTabClass:CalcStatWeights()
 	local calcFunc, calcBase = self.build.calcsTab:GetMiscCalculator()
 	local basestats = {
 		["+1% to Global Critical Strike Multiplier"] = {{"CritMultiplier", "BASE", 1}},
+		["1% increased Global Critical Strike Chance"] = {{"CritChance", "INC", 1}},
 		["1% increased Attack Speed"] ={{"Speed", "INC", 1}},
 		["Adds 1 to 1 Cold Damage to Attacks"] = {{"ColdMin", "BASE", 1}, {"ColdMax", "BASE", 1}},
 		["Adds 1 to 1 Fire Damage to Attacks"] = {{"FireMin", "BASE", 1}, {"FireMax", "BASE", 1}},
@@ -1323,8 +1324,11 @@ function ItemsTabClass:CalcStatWeights()
 		["Adds 1 to 1 Physical Damage to Attacks"] = {{"PhysicalMin", "BASE", 1}, {"PhysicalMax", "BASE", 1}},
 		["Damage Penetrates 1% Elemental Resistance"] = {{"ElementalPenetration", "BASE", 1}},
 		["Gain 1% of Physical Damage as Extra Fire Damage"] = {{"PhysicalDamageGainAsFire", "BASE", 1}},
-		["1% increased Cold Damage"] ={{"ColdDamage", "INC", 1}},
-		["1% increased Damage"] ={{"Damage", "INC", 1}},
+		["1% increased Cold Damage"] = {{"ColdDamage", "INC", 1}},
+		["1% increased Fire Damage"] = {{"FireDamage", "INC", 1}},
+		["1% increased Lightning Damage"] = {{"LightningDamage", "INC", 1}},
+		["1% increased Physical Damage"] = {{"PhysicalDamage", "INC", 1}},
+		["1% increased Damage"] = {{"Damage", "INC", 1}},
 	}
 	local item = nil;
 	local controls = { }
@@ -1336,10 +1340,10 @@ function ItemsTabClass:CalcStatWeights()
 	end
 	for k, v in pairs(basestats) do
 		output = calcFunc({addMods = v})
-		outstr = outstr..k..": "..tostring(math.floor(output.TotalDPS-calcBase.TotalDPS+0.5)).."\n";
+		outstr = outstr..k..": "..tostring(math.floor(((output.TotalDPS-calcBase.TotalDPS)/10)+0.5)).."\n";
 	end
 	controls.edit = common.New("EditControl", nil, 0, 40, 480, 420, "", nil, "^%C\t\n", nil, nil, 14)
-	controls.edit:SetText("Stat Weights go here:\n"..outstr..calcBase.TotalDPS.."\n"..output.TotalDPS)
+	controls.edit:SetText("Stat Weights go here:\n"..outstr)
 	controls.edit.font = "FIXED"
 	controls.cancel = common.New("ButtonControl", nil, 0, 470, 80, 20, "Cancel", function()
 		main:ClosePopup()
