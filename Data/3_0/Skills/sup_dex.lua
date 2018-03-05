@@ -393,7 +393,7 @@ skills["SupportChain"] = {
 	excludeSkillTypes = { },
 	baseMods = {
 		mod("ManaCost", "MORE", 50), 
-		mod("ChainCount", "BASE", 2), --"number_of_additional_projectiles_in_chain" = 2
+		mod("ChainCountMax", "BASE", 2), --"number_of_additional_projectiles_in_chain" = 2
 	},
 	qualityMods = {
 		mod("ProjectileSpeed", "INC", 1), --"base_projectile_speed_+%" = 1
@@ -1921,7 +1921,7 @@ skills["SupportTrap"] = {
 		mod("ManaCost", "MORE", 40), 
 		skill("cooldown", 4), 
 		--"is_trap" = 1
-		--"base_trap_duration" = 16000
+		--"base_trap_duration" = 4000
 		--"trap_override_pvp_scaling_time_ms" = 900
 		--"base_skill_is_trapped" = ?
 		--"disable_skill_if_melee_attack" = ?
@@ -2229,7 +2229,7 @@ skills["SupportParallelProjectiles"] = {
 	support = true,
 	requireSkillTypes = { 68, },
 	addSkillTypes = { },
-	excludeSkillTypes = { },
+	excludeSkillTypes = { 70, 71, },
 	baseMods = {
 		mod("ManaCost", "MORE", 40), 
 		--"support_parallel_projectile_number_of_points_per_side" = 2

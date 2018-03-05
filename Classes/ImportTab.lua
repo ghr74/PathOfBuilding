@@ -202,6 +202,9 @@ You can get this from your web browser's cookies while logged into the Path of E
 		if not xmlText then
 			return
 		end
+		if launch.devMode and IsKeyDown("SHIFT") then
+			Copy(xmlText)
+		end
 		self.importCodeState = "VALID"
 		self.importCodeXML = xmlText
 		if not self.build.dbFileName then
@@ -471,7 +474,7 @@ function ImportTabClass:ImportItem(itemData, sockets, slotName)
 		return
 	end
 
-	local item = { }
+	local item = common.New("Item", self.build.targetVersion)
 
 	-- Determine rarity, display name and base type of the item
 	item.rarity = rarityMap[itemData.frameType]
@@ -612,10 +615,9 @@ function ImportTabClass:ImportItem(itemData, sockets, slotName)
 	end
 
 	-- Add and equip the new item
-	item.raw = itemLib.createItemRaw(item)
+	item:BuildAndParseRaw()
 	--ConPrintf("%s", item.raw)
-	local newItem = itemLib.makeItemFromRaw(self.build.targetVersion, item.raw)
-	if newItem then
+	if item.base then
 		local repIndex, repItem
 		for index, item in pairs(self.build.itemsTab.items) do
 			if item.uniqueID == itemData.id then
@@ -626,13 +628,13 @@ function ImportTabClass:ImportItem(itemData, sockets, slotName)
 		end
 		if repIndex then
 			-- Item already exists in the build, overwrite it
-			newItem.id = repItem.id
-			self.build.itemsTab.items[newItem.id] = newItem
-			itemLib.buildItemModList(newItem)
+			item.id = repItem.id
+			self.build.itemsTab.items[item.id] = item
+			item:BuildModList()
 		else
-			self.build.itemsTab:AddItem(newItem, true)
+			self.build.itemsTab:AddItem(item, true)
 		end
-		self.build.itemsTab.slots[slotName]:SetSelItemId(newItem.id)
+		self.build.itemsTab.slots[slotName]:SetSelItemId(item.id)
 	end
 end
 
@@ -705,14 +707,15 @@ end
 function ImportTabClass:OpenPastebinImportPopup()
 	local controls = { }
 	controls.editLabel = common.New("LabelControl", nil, 0, 20, 0, 16, "Enter Pastebin.com link:")
-	controls.edit = common.New("EditControl", nil, 0, 40, 250, 18, "", nil, nil, nil, function(buf)
+	controls.edit = common.New("EditControl", nil, 0, 40, 250, 18, "", nil, "^%w%p%s", nil, function(buf)
 		controls.msg.label = ""
 	end)
 	controls.msg = common.New("LabelControl", nil, 0, 58, 0, 16, "")
 	controls.import = common.New("ButtonControl", nil, -45, 80, 80, 20, "Import", function()
 		controls.import.enabled = false
 		controls.msg.label = "Retrieving paste..."
-		launch:DownloadPage(controls.edit.buf:gsub("pastebin%.com/(%w+)$","pastebin.com/raw/%1"), function(page, errMsg)
+		controls.edit.buf = controls.edit.buf:gsub("^%s+", ""):gsub("%s+$", "") -- Quick Trim
+		launch:DownloadPage(controls.edit.buf:gsub("pastebin%.com/(%w+)%s*$","pastebin.com/raw/%1"), function(page, errMsg)
 			if errMsg then
 				controls.msg.label = "^1"..errMsg
 				controls.import.enabled = true

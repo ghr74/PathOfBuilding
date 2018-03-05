@@ -217,6 +217,11 @@ function calcs.offence(env, actor)
 			output.ActiveMinionLimit = m_floor(calcLib.val(modDB, mainSkill.minion.minionData.limit, skillCfg))
 		end
 	end
+	if skillFlags.chaining then
+		output.ChainMax = modDB:Sum("BASE", skillCfg, "ChainCountMax")
+		output.Chain = m_min(output.ChainMax, modDB:Sum("BASE", skillCfg, "ChainCount"))
+		output.ChainRemaining = m_max(0, output.ChainMax - output.Chain)
+	end
 	if skillFlags.projectile then
 		if modDB:Sum("FLAG", nil, "PointBlank") then
 			modDB:NewMod("Damage", "MORE", 50, "Point Blank", bor(ModFlag.Attack, ModFlag.Projectile), { type = "DistanceRamp", ramp = {{10,1},{35,0},{150,-1}} })
@@ -461,11 +466,11 @@ function calcs.offence(env, actor)
 		for otherTypeIndex = damageTypeIndex + 1, 5 do
 			-- For all possible destination types, check for global and skill conversions
 			otherType = dmgTypeList[otherTypeIndex]
-			globalConv[otherType] = modDB:Sum("BASE", skillCfg, damageType.."DamageConvertTo"..otherType, isElemental[damageType] and "ElementalDamageConvertTo"..otherType or nil)
+			globalConv[otherType] = modDB:Sum("BASE", skillCfg, damageType.."DamageConvertTo"..otherType, isElemental[damageType] and "ElementalDamageConvertTo"..otherType or nil, damageType ~= "Chaos" and "NonChaosDamageConvertTo"..otherType or nil)
 			globalTotal = globalTotal + globalConv[otherType]
 			skillConv[otherType] = modDB:Sum("BASE", skillCfg, "Skill"..damageType.."DamageConvertTo"..otherType)
 			skillTotal = skillTotal + skillConv[otherType]
-			add[otherType] = modDB:Sum("BASE", skillCfg, damageType.."DamageGainAs"..otherType, isElemental[damageType] and "ElementalDamageGainAs"..otherType or nil)
+			add[otherType] = modDB:Sum("BASE", skillCfg, damageType.."DamageGainAs"..otherType, isElemental[damageType] and "ElementalDamageGainAs"..otherType or nil, damageType ~= "Chaos" and "NonChaosDamageGainAs"..otherType or nil)
 		end
 		if skillTotal > 100 then
 			-- Skill conversion exceeds 100%, scale it down and remove non-skill conversions
@@ -543,9 +548,20 @@ function calcs.offence(env, actor)
 				breakdown.OffHand = LoadModule(calcs.breakdownModule, modDB, output.OffHand)
 			end
 			mainSkill.weapon2Cfg.skillStats = output.OffHand
+			local source = copyTable(actor.weaponData2)
+			if skillData.setOffHandBaseCritChance then
+				source.CritChance = skillData.setOffHandBaseCritChance
+			end
+			if skillData.setOffHandPhysicalMin and skillData.setOffHandPhysicalMax then
+				source.PhysicalMin = skillData.setOffHandPhysicalMin
+				source.PhysicalMax = skillData.setOffHandPhysicalMax
+			end
+			if skillData.setOffHandAttackTime then
+				source.AttackRate = 1000 / skillData.setOffHandAttackTime
+			end
 			t_insert(passList, {
 				label = "Off Hand",
-				source = actor.weaponData2,
+				source = source,
 				cfg = mainSkill.weapon2Cfg,
 				output = output.OffHand,
 				breakdown = breakdown and breakdown.OffHand,
@@ -604,6 +620,7 @@ function calcs.offence(env, actor)
 	end
 
 	for _, pass in ipairs(passList) do
+		local globalOutput, globalBreakdown = output, breakdown
 		local source, output, cfg, breakdown = pass.source, pass.output, pass.cfg, pass.breakdown
 		
 		-- Calculate hit chance
@@ -611,7 +628,7 @@ function calcs.offence(env, actor)
 		if breakdown then
 			breakdown.Accuracy = breakdown.simple(nil, cfg, output.Accuracy, "Accuracy")
 		end
-		if not isAttack or modDB:Sum("FLAG", cfg, "CannotBeEvaded") or skillData.cannotBeEvaded then
+		if not isAttack or modDB:Sum("FLAG", cfg, "CannotBeEvaded") or skillData.cannotBeEvaded or (env.mode_effective and enemyDB:Sum("FLAG", nil, "CannotEvade")) then
 			output.HitChance = 100
 		else
 			local enemyEvasion = round(calcLib.val(enemyDB, "Evasion"))
@@ -641,14 +658,31 @@ function calcs.offence(env, actor)
 			else
 				baseSpeed = 1 / (skillData.castTime or 1)
 			end
-			output.Speed = baseSpeed * round(calcLib.mod(modDB, cfg, "Speed"), 2)
-			if breakdown then
-				breakdown.Speed = breakdown.simple(baseSpeed, cfg, output.Speed, "Speed")
-			end
+			local inc = modDB:Sum("INC", cfg, "Speed")
+			local more = modDB:Sum("MORE", cfg, "Speed")
+			output.Speed = baseSpeed * round((1 + inc/100) * more, 2)
 			if skillData.attackRateCap then
 				output.Speed = m_min(output.Speed, skillData.attackRateCap)
 			end
-			output.Time = 1 / output.Speed
+			if skillFlags.selfCast then
+				-- Self-cast skill; apply action speed
+				output.Speed = output.Speed * globalOutput.ActionSpeedMod
+			end
+			if breakdown then
+				breakdown.Speed = { }
+				breakdown.multiChain(breakdown.Speed, {
+					base = s_format("%.2f ^8(base)", baseSpeed),
+					{ "%.2f ^8(increased/reduced)", 1 + inc/100 },
+					{ "%.2f ^8(more/less)", more },
+					{ "%.2f ^8(action speed modifier)", skillFlags.selfCast and globalOutput.ActionSpeedMod or 1 }, 
+					total = s_format("= %.2f ^8per second", output.Speed)
+				})
+			end
+			if output.Speed == 0 then
+				output.Time = 0
+			else
+				output.Time = 1 / output.Speed
+			end
 		end
 		if skillData.hitTimeOverride then
 			output.HitTime = skillData.hitTimeOverride
@@ -660,7 +694,11 @@ function calcs.offence(env, actor)
 		-- Combine hit chance and attack speed
 		combineStat("HitChance", "AVERAGE")
 		combineStat("Speed", "AVERAGE")
-		output.Time = 1 / output.Speed
+		if output.Speed == 0 then
+			output.Time = 0
+		else
+			output.Time = 1 / output.Speed
+		end
 		if skillFlags.bothWeaponAttack then
 			if breakdown then
 				breakdown.Speed = {
@@ -870,7 +908,7 @@ function calcs.offence(env, actor)
 						-- Apply enemy resistances and damage taken modifiers
 						local resist = 0
 						local pen = 0
-						local taken = enemyDB:Sum("INC", nil, "DamageTaken", damageType.."DamageTaken")
+						local taken = enemyDB:Sum("INC", cfg, "DamageTaken", damageType.."DamageTaken")
 						if damageType == "Physical" then
 							resist = enemyDB:Sum("BASE", nil, "PhysicalDamageReduction")
 						else
@@ -886,7 +924,7 @@ function calcs.offence(env, actor)
 							taken = taken + enemyDB:Sum("INC", nil, "ProjectileDamageTaken")
 						end
 						local effMult = (1 + taken / 100)
-						if not isElemental[damageType] or not modDB:Sum("FLAG", cfg, "IgnoreElementalResistances") then
+						if not isElemental[damageType] or not modDB:Sum("FLAG", cfg, "IgnoreElementalResistances", "Ignore"..damageType.."Resistance") then
 							effMult = effMult * (1 - (resist - pen) / 100)
 						end
 						min = min * effMult

@@ -507,7 +507,7 @@ function SkillsTabClass:ProcessSocketGroup(socketGroup)
 				end
 			end
 		else
-			gem.errMsg, gem.grantedEffect = nil
+			gem.errMsg, gem.grantedEffect, gem.skillId = nil
 		end
 	end
 end

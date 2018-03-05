@@ -109,46 +109,107 @@ function ModDBClass:EvalMod(mod, cfg)
 	local value = mod.value
 	for _, tag in ipairs(mod) do
 		if tag.type == "Multiplier" then
-			local base = (self.multipliers[tag.var] or 0) + self:Sum("BASE", cfg, multiplierName[tag.var])
+			local base = 0
+			if tag.varList then
+				for _, var in pairs(tag.varList) do
+					base = base + (self.multipliers[var] or 0) + self:Sum("BASE", cfg, multiplierName[var])
+				end
+			else
+				base = (self.multipliers[tag.var] or 0) + self:Sum("BASE", cfg, multiplierName[tag.var])
+			end
 			local mult = m_floor(base / (tag.div or 1) + 0.0001)
+			local limitTotal
 			if tag.limit or tag.limitVar then
 				local limit = tag.limit or ((self.multipliers[tag.limitVar] or 0) + self:Sum("BASE", cfg, multiplierName[tag.limitVar]))
-				mult = m_min(mult, limit)
+				if tag.limitTotal then
+					limitTotal = limit
+				else
+					mult = m_min(mult, limit)
+				end
 			end
 			if type(value) == "table" then
 				value = copyTable(value)
 				if value.mod then
 					value.mod.value = value.mod.value * mult + (tag.base or 0)
+					if limitTotal then
+						value.mod.value = m_min(value.mod.value, limitTotal)
+					end
 				else
 					value.value = value.value * mult + (tag.base or 0)
+					if limitTotal then
+						value.value = m_min(value.value, limitTotal)
+					end
 				end
 			else
 				value = value * mult + (tag.base or 0)
+				if limitTotal then
+					value = m_min(value, limitTotal)
+				end
 			end
 		elseif tag.type == "MultiplierThreshold" then
-			local mult = (self.multipliers[tag.var] or 0) + self:Sum("BASE", cfg, multiplierName[tag.var])
-			if mult < tag.threshold then
+			local mult = 0
+			if tag.varList then
+				for _, var in pairs(tag.varList) do
+					mult = mult + (self.multipliers[var] or 0) + self:Sum("BASE", cfg, multiplierName[var])
+				end
+			else
+				mult = (self.multipliers[tag.var] or 0) + self:Sum("BASE", cfg, multiplierName[tag.var])
+			end
+			local threshold = tag.threshold or ((self.multipliers[tag.thresholdVar] or 0) + self:Sum("BASE", cfg, multiplierName[tag.thresholdVar]))
+			if (tag.upper and mult > tag.threshold) or (not tag.upper and mult < tag.threshold) then
 				return
 			end
 		elseif tag.type == "PerStat" then
-			local base = self.actor.output[tag.stat] or (cfg and cfg.skillStats and cfg.skillStats[tag.stat]) or 0
+			local base
+			if tag.statList then
+				base = 0
+				for _, stat in ipairs(tag.statList) do
+					base = base + (self.actor.output[stat] or (cfg and cfg.skillStats and cfg.skillStats[stat]) or 0)
+				end
+			else
+				base = self.actor.output[tag.stat] or (cfg and cfg.skillStats and cfg.skillStats[tag.stat]) or 0
+			end
 			local mult = m_floor(base / (tag.div or 1) + 0.0001)
+			local limitTotal
 			if tag.limit or tag.limitVar then
 				local limit = tag.limit or ((self.multipliers[tag.limitVar] or 0) + self:Sum("BASE", cfg, multiplierName[tag.limitVar]))
-				mult = m_min(mult, limit)
+				if tag.limitTotal then
+					limitTotal = limit
+				else
+					mult = m_min(mult, limit)
+				end 
 			end
 			if type(value) == "table" then
 				value = copyTable(value)
 				if value.mod then
 					value.mod.value = value.mod.value * mult + (tag.base or 0)
+					if limitTotal then
+						value.mod.value = m_min(value.mod.value, limitTotal)
+					end
 				else
 					value.value = value.value * mult + (tag.base or 0)
+					if limitTotal then
+						value.value = m_min(value.value, limitTotal)
+					end
 				end
 			else
 				value = value * mult + (tag.base or 0)
+				if limitTotal then
+					value = m_min(value, limitTotal)
+				end
 			end
 		elseif tag.type == "StatThreshold" then
-			if (self.actor.output[tag.stat] or (cfg and cfg.skillStats and cfg.skillStats[tag.stat]) or 0) < tag.threshold then
+			local stat
+			if tag.statList then
+				stat = 0
+				for _, stat in ipairs(tag.statList) do
+					stat = stat + (self.actor.output[stat] or (cfg and cfg.skillStats and cfg.skillStats[stat]) or 0)
+				end
+			else
+				stat = self.actor.output[tag.stat] or (cfg and cfg.skillStats and cfg.skillStats[tag.stat]) or 0
+			end
+			local threshold = tag.threshold or (self.actor.output[tag.thresholdStat] or (cfg and cfg.skillStats and cfg.skillStats[tag.thresholdStat]) or 0)
+			if (tag.upper and stat > threshold) or (not tag.upper and stat < threshold) then
 				return
 			end
 		elseif tag.type == "DistanceRamp" then

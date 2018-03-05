@@ -382,6 +382,7 @@ return {
 		{ modName = "Duration", cfg = "skill" }, 
 	}, },
 	{ label = "Skill Duration", flag = "duration", haveOutput = "Duration", { format = "{2:output:Duration}s", { breakdown = "Duration" }, }, },
+	{ label = "Max Chain Count", flag = "chaining", { format = "{0:output:ChainMax}", { modName = "ChainCountMax", cfg = "skill" }, }, }, 
 	{ label = "Projectile Count", flag = "projectile", { format = "{0:output:ProjectileCount}", { modName = "ProjectileCount", cfg = "skill" }, }, },
 	{ label = "Pierce Chance", flag = "projectile", { format = "{0:output:PierceChance}%", { modName = "PierceChance", cfg = "skill" }, }, },
 	{ label = "Proj. Speed Mod", flag = "projectile", { format = "x {2:output:ProjectileSpeedMod}",
@@ -847,7 +848,7 @@ return {
 	{ label = "Net Regen", haveOutput = "NetRegen", { format = "{1:output:NetRegen}", { breakdown = "NetRegen" }, }, },
 } },
 { 1, "MiscDefences", 3, "Other Defences", colorCodes.DEFENCE, {
-	{ label = "Movement Speed", { format = "x {2:output:MovementSpeedMod}", { modName = "MovementSpeed" }, }, },
+	{ label = "Movement Speed", { format = "x {2:output:EffectiveMovementSpeedMod}", { breakdown = "EffectiveMovementSpeedMod" }, { modName = "MovementSpeed" }, }, },
 	{ label = "Dodge Chance", { format = "{0:output:AttackDodgeChance}%", { modName = "AttackDodgeChance" }, }, },
 	{ label = "Spell Ddg. Chance", { format = "{0:output:SpellDodgeChance}%", { modName = "SpellDodgeChance" }, }, }, 
 	{ label = "Block Chance", { format = "{0:output:BlockChance}%",

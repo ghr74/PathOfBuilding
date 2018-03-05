@@ -238,7 +238,7 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 			end
 		end
 	elseif treeClick == "RIGHT" then
-		if hoverNode and hoverNode.alloc and hoverNode.type == "socket" then
+		if hoverNode and hoverNode.alloc and hoverNode.type == "Socket" then
 			local slot = build.itemsTab.sockets[hoverNode.id]
 			if slot:IsEnabled() then
 				-- User right-clicked a jewel socket, jump to the item page and focus the corresponding item slot control
@@ -251,9 +251,14 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 
 	-- Draw the background artwork
 	local bg = tree.assets.Background1
-	local bgSize = bg.width * scale * 1.33 * 2.5
-	SetDrawColor(1, 1, 1)
-	DrawImage(bg.handle, viewPort.x, viewPort.y, viewPort.width, viewPort.height, (self.zoomX + viewPort.width/2) / -bgSize, (self.zoomY + viewPort.height/2) / -bgSize, (viewPort.width/2 - self.zoomX) / bgSize, (viewPort.height/2 - self.zoomY) / bgSize)
+	if bg.width == 0 then
+		bg.width, bg.height = bg.handle:ImageSize()
+	end
+	if bg.width > 0 then
+		local bgSize = bg.width * scale * 1.33 * 2.5
+		SetDrawColor(1, 1, 1)
+		DrawImage(bg.handle, viewPort.x, viewPort.y, viewPort.width, viewPort.height, (self.zoomX + viewPort.width/2) / -bgSize, (self.zoomY + viewPort.height/2) / -bgSize, (viewPort.width/2 - self.zoomX) / bgSize, (viewPort.height/2 - self.zoomY) / bgSize)
+	end
 
 	-- Hack to draw class background art, the position data doesn't seem to be in the tree JSON yet
 	if build.spec.curClassId == 1 then
@@ -347,11 +352,11 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 		-- Determine the base and overlay images for this node based on type and state
 		local base, overlay
 		SetDrawLayer(nil, 25)
-		if node.type == "classStart" then
+		if node.type == "ClassStart" then
 			overlay = node.alloc and node.startArt or "PSStartNodeBackgroundInactive"
-		elseif node.type == "ascendClassStart" then
+		elseif node.type == "AscendClassStart" then
 			overlay = "PassiveSkillScreenAscendancyMiddle"
-		elseif node.type == "mastery" then
+		elseif node.type == "Mastery" then
 			-- This is the icon that appears in the center of many groups
 			SetDrawLayer(nil, 15)
 			base = node.sprites.mastery
@@ -366,7 +371,7 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 			else
 				state = "unalloc"
 			end
-			if node.type == "socket" then
+			if node.type == "Socket" then
 				-- Node is a jewel socket, retrieve the socketed jewel (if present) so we can display the correct art
 				base = tree.assets[node.overlay[state]]
 				local socket, jewel = build.itemsTab:GetSocketAndJewelForNodeID(nodeId)
@@ -385,7 +390,7 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 				end
 			else
 				-- Normal node (includes keystones and notables)
-				base = node.sprites[node.type..(node.alloc and "Active" or "Inactive")] 
+				base = node.sprites[node.type:lower()..(node.alloc and "Active" or "Inactive")] 
 				overlay = node.overlay[state .. (node.ascendancyName and "Ascend" or "")]
 			end
 		end
@@ -399,7 +404,7 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 			SetDrawColor(0.5, 0.5, 0.5)
 		end
 		if self.showHeatMap then
-			if not node.alloc and node.type ~= "classStart" and node.type ~= "ascendClassStart" then
+			if not node.alloc and node.type ~= "ClassStart" and node.type ~= "AscendClassStart" then
 				-- Calculate color based on DPS and defensive powers
 				local offence = m_max(node.power.offence or 0, 0)
 				local defence = m_max(node.power.defence or 0, 0)
@@ -436,13 +441,13 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 
 		if overlay then
 			-- Draw overlay
-			if node.type ~= "classStart" and node.type ~= "ascendClassStart" then
+			if node.type ~= "ClassStart" and node.type ~= "AscendClassStart" then
 				if hoverNode and hoverNode ~= node then
 					-- Mouse is hovering over a different node
 					if hoverDep and hoverDep[node] then
 						-- This node depends on the hover node, turn it red
 						SetDrawColor(1, 0, 0)
-					elseif hoverNode.type == "socket" then
+					elseif hoverNode.type == "Socket" then
 						-- Hover node is a socket, check if this node falls within its radius and color it accordingly
 						for index, data in ipairs(build.data.jewelRadius) do
 							if hoverNode.nodesInRadius[index][node.id] then
@@ -463,7 +468,7 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 			local size = 175 * scale / self.zoom ^ 0.4
 			DrawImage(self.highlightRing, scrX - size, scrY - size, size * 2, size * 2)
 		end
-		if node == hoverNode and (node.type ~= "socket" or not IsKeyDown("SHIFT")) and not main.popups[1] then
+		if node == hoverNode and (node.type ~= "Socket" or not IsKeyDown("SHIFT")) and not main.popups[1] then
 			-- Draw tooltip
 			SetDrawLayer(nil, 100)
 			local size = m_floor(node.size * scale)
@@ -505,6 +510,12 @@ function PassiveTreeViewClass:DrawAsset(data, x, y, scale, isHalf)
 	if not data then
 		return
 	end
+	if data.width == 0 then
+		data.width, data.height = data.handle:ImageSize()
+		if data.width == 0 then
+			return
+		end
+	end
 	local width = data.width * scale * 1.33
 	local height = data.height * scale * 1.33
 	if isHalf then
@@ -532,7 +543,7 @@ function PassiveTreeViewClass:Zoom(level, viewPort)
 end
 
 function PassiveTreeViewClass:DoesNodeMatchSearchStr(node)
-	if node.type == "classStart" or node.type == "mastery" then
+	if node.type == "ClassStart" or node.type == "Mastery" then
 		return
 	end
 
@@ -567,16 +578,23 @@ function PassiveTreeViewClass:DoesNodeMatchSearchStr(node)
 	end
 end
 
-function PassiveTreeViewClass:AddNodeName(tooltip, node)
+function PassiveTreeViewClass:AddNodeName(tooltip, node, build)
 	tooltip:AddLine(24, "^7"..node.dn..(launch.devModeAlt and " ["..node.id.."]" or ""))
-	if node.type == "socket" then
-		if node.attributesInRadius[2]["Str"] >= 40 then
+	if node.type == "Socket" then
+		local attribTotals = { }
+		for nodeId in pairs(node.nodesInRadius[2]) do
+			local specNode = build.spec.nodes[nodeId]
+			for _, attrib in ipairs{"Str","Dex","Int"} do
+				attribTotals[attrib] = (attribTotals[attrib] or 0) + specNode.finalModList:Sum("BASE", nil, attrib)
+			end
+		end
+		if attribTotals["Str"] >= 40 then
 			tooltip:AddLine(16, "^7Can support "..colorCodes.STRENGTH.."Strength ^7threshold jewels")
 		end
-		if node.attributesInRadius[2]["Dex"] >= 40 then
+		if attribTotals["Dex"] >= 40 then
 			tooltip:AddLine(16, "^7Can support "..colorCodes.DEXTERITY.."Dexterity ^7threshold jewels")
 		end
-		if node.attributesInRadius[2]["Int"] >= 40 then
+		if attribTotals["Int"] >= 40 then
 			tooltip:AddLine(16, "^7Can support "..colorCodes.INTELLIGENCE.."Intelligence ^7threshold jewels")
 		end
 	end
@@ -584,12 +602,12 @@ end
 
 function PassiveTreeViewClass:AddNodeTooltip(tooltip, node, build)
 	-- Special case for sockets
-	if node.type == "socket" and node.alloc then
+	if node.type == "Socket" and node.alloc then
 		local socket, jewel = build.itemsTab:GetSocketAndJewelForNodeID(node.id)
 		if jewel then
 			build.itemsTab:AddItemTooltip(tooltip, jewel, { nodeId = node.id })
 		else
-			self:AddNodeName(tooltip, node)
+			self:AddNodeName(tooltip, node, build)
 		end
 		tooltip:AddSeparator(14)
 		if socket:IsEnabled() then
@@ -600,7 +618,7 @@ function PassiveTreeViewClass:AddNodeTooltip(tooltip, node, build)
 	end
 	
 	-- Node name
-	self:AddNodeName(tooltip, node)
+	self:AddNodeName(tooltip, node, build)
 	if launch.devModeAlt then
 		if node.power and node.power.offence then
 			-- Power debugging info
@@ -690,7 +708,7 @@ function PassiveTreeViewClass:AddNodeTooltip(tooltip, node, build)
 			end
 		end
 	end
-	if node.type == "socket" then
+	if node.type == "Socket" then
 		tooltip:AddLine(14, colorCodes.TIP.."Tip: Hold Shift to hide this tooltip.")
 	end
 	if node.depends and #node.depends > 1 then

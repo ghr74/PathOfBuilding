@@ -85,7 +85,7 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 
 	ConPrintf("Loading passive tree assets...")
 	for name, data in pairs(self.assets) do
-		self:LoadImage(name..".png", data[0.3835] or data[1], data)--, not name:match("[OL][ri][bn][ie][tC]") and "MIPMAP" or nil)
+		self:LoadImage(name..".png", data[0.3835] or data[1], data, not name:match("[OL][ri][bn][ie][tC]") and "ASYNC" or nil)--, not name:match("[OL][ri][bn][ie][tC]") and "MIPMAP" or nil)
 	end
 
 	-- Load sprite sheets and build sprite map
@@ -125,7 +125,8 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 		[6] = "centershadow"
 	}
 	local nodeOverlay = {
-		normal = {
+		Normal = {
+			artWidth = 40,
 			alloc = "PSSkillFrameActive",
 			path = "PSSkillFrameHighlighted",
 			unalloc = "PSSkillFrame",
@@ -133,7 +134,8 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 			pathAscend = "PassiveSkillScreenAscendancyFrameSmallCanAllocate",
 			unallocAscend = "PassiveSkillScreenAscendancyFrameSmallNormal"
 		},
-		notable = {
+		Notable = {
+			artWidth = 58,
 			alloc = "NotableFrameAllocated",
 			path = "NotableFrameCanAllocate",
 			unalloc = "NotableFrameUnallocated",
@@ -141,19 +143,21 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 			pathAscend = "PassiveSkillScreenAscendancyFrameLargeCanAllocate",
 			unallocAscend = "PassiveSkillScreenAscendancyFrameLargeNormal"
 		},
-		keystone = { 
+		Keystone = { 
+			artWidth = 84,
 			alloc = "KeystoneFrameAllocated",
 			path = "KeystoneFrameCanAllocate",
 			unalloc = "KeystoneFrameUnallocated"
 		},
-		socket = {
+		Socket = {
+			artWidth = 58, 
 			alloc = "JewelFrameAllocated",
 			path = "JewelFrameCanAllocate",
 			unalloc = "JewelFrameUnallocated"
 		}
 	}
 	for type, data in pairs(nodeOverlay) do
-		local size = self.assets[data.unalloc].width * 1.33
+		local size = data.artWidth * 1.33
 		data.size = size
 		data.rsq = size * size
 	end
@@ -173,26 +177,26 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 
 		-- Determine node type
 		if node.spc[0] then
-			node.type = "classStart"
+			node.type = "ClassStart"
 			local class = self.classes[node.spc[0]]
 			class.startNodeId = node.id
 			node.startArt = classArt[node.spc[0]]
 		elseif node.isAscendancyStart then
-			node.type = "ascendClassStart"
+			node.type = "AscendClassStart"
 			local ascendClass = self.ascendNameMap[node.ascendancyName].ascendClass
 			ascendClass.startNodeId = node.id
 		elseif node.m then
-			node.type = "mastery"
+			node.type = "Mastery"
 		elseif node.isJewelSocket then
-			node.type = "socket"
+			node.type = "Socket"
 			sockets[node.id] = node
 		elseif node.ks then
-			node.type = "keystone"
+			node.type = "Keystone"
 			self.keystoneMap[node.dn] = node
 		elseif node["not"] then
-			node.type = "notable"
+			node.type = "Notable"
 		else
-			node.type = "normal"
+			node.type = "Normal"
 		end
 
 		-- Assign node artwork assets
@@ -295,7 +299,7 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 				end
 			end
 		end
-		if node.type == "keystone" then
+		if node.type == "Keystone" then
 			node.keystoneMod = modLib.createMod("Keystone", "LIST", node.dn, "Tree"..node.id)
 		end
 	end
@@ -313,9 +317,6 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 					local vX, vY = node.x - socket.x, node.y - socket.y
 					if vX * vX + vY * vY <= rSq then 
 						socket.nodesInRadius[radiusIndex][node.id] = node
-						for _, att in pairs({"Str","Dex","Int"}) do
-							socket.attributesInRadius[radiusIndex][att] = (socket.attributesInRadius[radiusIndex][att] or 0) + node.modList:Sum("BASE", nil, att)
-						end
 					end
 				end
 			end
@@ -329,7 +330,7 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 			local other = nodeMap[otherId]
 			t_insert(node.linkedId, otherId)
 			t_insert(other.linkedId, node.id)
-			if node.type ~= "classStart" and other.type ~= "classStart" and node.type ~= "mastery" and other.type ~= "mastery" and node.ascendancyName == other.ascendancyName then
+			if node.type ~= "ClassStart" and other.type ~= "ClassStart" and node.type ~= "Mastery" and other.type ~= "Mastery" and node.ascendancyName == other.ascendancyName then
 				t_insert(self.connectors, self:BuildConnector(node, other))
 			end
 		end
@@ -339,7 +340,7 @@ local PassiveTreeClass = common.NewClass("PassiveTree", function(self, targetVer
 		local startNode = nodeMap[class.startNodeId]
 		for _, nodeId in ipairs(startNode.linkedId) do
 			local node = nodeMap[nodeId]
-			if node.type == "normal" then
+			if node.type == "Normal" then
 				node.modList:NewMod("Condition:ConnectedTo"..class.name.."Start", "FLAG", true, "Tree:"..nodeId)
 			end
 		end

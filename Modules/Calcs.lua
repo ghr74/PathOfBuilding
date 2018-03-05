@@ -96,7 +96,7 @@ end
 function calcs.getNodeCalculator(build)
 	return getCalculator(build, true, function(env, nodeList)
 		-- Build and merge modifiers for these nodes
-		env.modDB:AddList(calcs.buildNodeModList(env, nodeList))
+		env.modDB:AddList(calcs.buildModListForNodeList(env, nodeList))
 	end)
 end
 
@@ -196,14 +196,23 @@ function calcs.buildOutput(build, mode)
 		end
 
 		env.multipliersUsed = { }
+		local function addMult(var, mod)
+			if not env.multipliersUsed[var] then
+				env.multipliersUsed[var] = { }
+			end
+			t_insert(env.multipliersUsed[var], mod)
+		end
 		for modName, modList in pairs(env.player.modDB.mods) do
 			for _, mod in ipairs(modList) do
 				for _, tag in ipairs(mod) do
 					if tag.type == "Multiplier" or tag.type == "MultiplierThreshold" then
-						if not env.multipliersUsed[tag.var] then
-							env.multipliersUsed[tag.var] = { }
+						if tag.varList then
+							for _, tag in pairs(tag.varList) do
+								addMult(tag, mod)
+							end
+						else
+							addMult(tag.var, mod)
 						end
-						t_insert(env.multipliersUsed[tag.var], mod)
 					end
 				end
 			end
@@ -221,6 +230,9 @@ function calcs.buildOutput(build, mode)
 		if output.EnduranceCharges > 0 then
 			t_insert(combatList, s_format("%d Endurance Charges", output.EnduranceCharges))
 		end
+		if output.SiphoningCharges > 0 then
+			t_insert(combatList, s_format("%d Siphoning Charges", output.SiphoningCharges))
+		end
 		if env.modDB:Sum("FLAG", nil, "Fortify") then
 			t_insert(combatList, "Fortify")
 		end
@@ -229,6 +241,12 @@ function calcs.buildOutput(build, mode)
 		end
 		if env.modDB:Sum("FLAG", nil, "UnholyMight") then
 			t_insert(combatList, "Unholy Might")
+		end
+		if env.modDB:Sum("FLAG", nil, "Tailwind") then
+			t_insert(combatList, "Tailwind")
+		end
+		if env.modDB:Sum("FLAG", nil, "Adrenaline") then
+			t_insert(combatList, "Adrenaline")
 		end
 		if env.modDB:Sum("FLAG", nil, "HerEmbrace") then
 			t_insert(combatList, "Her Embrace")

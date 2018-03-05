@@ -60,7 +60,7 @@ local CalcsTabClass = common.NewClass("CalcsTab", "UndoHandler", "ControlHost", 
 				self.build.buildFlag = true
 			end)
 		}, },
-		{ label = "Skill Part", flag = "multiPart", { controlName = "mainSkillPart", 
+		{ label = "Skill Part", playerFlag = "multiPart", { controlName = "mainSkillPart", 
 			control = common.New("DropDownControl", nil, 0, 0, 130, 16, nil, function(index, value)
 				local mainSocketGroup = self.build.skillsTab.socketGroupList[self.input.skill_number]
 				local srcGem = mainSocketGroup.displaySkillListCalcs[mainSocketGroup.mainActiveSkillCalcs].activeGem.srcGem
@@ -354,6 +354,9 @@ function CalcsTabClass:CheckFlag(obj)
 			end
 		end
 	end
+	if obj.playerFlag and not self.calcsEnv.player.mainSkill.skillFlags[obj.playerFlag] then
+		return
+	end
 	if obj.notFlag and skillFlags[obj.notFlag] then
 		return
 	end
@@ -390,6 +393,11 @@ function CalcsTabClass:BuildOutput()
 	SetProfiling(false)
 	ConPrintf("Calc time: %d msec", GetTime() - start)
 	--]]
+
+	for _, node in pairs(self.build.spec.nodes) do
+		-- Set default final mod list for all nodes; some may not be set during the main pass
+		node.finalModList = node.modList
+	end
 
 	self.mainEnv = self.calcs.buildOutput(self.build, "MAIN")
 	self.mainOutput = self.mainEnv.player.output

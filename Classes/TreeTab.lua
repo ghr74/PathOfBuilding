@@ -50,7 +50,7 @@ local TreeTabClass = common.NewClass("TreeTab", "ControlHost", function(self, bu
 					if spec.curClassId == self.build.spec.curClassId then
 						local respec = 0
 						for nodeId, node in pairs(self.build.spec.allocNodes) do
-							if node.type ~= "classStart" and node.type ~= "ascendClassStart" and not spec.allocNodes[nodeId] then
+							if node.type ~= "ClassStart" and node.type ~= "AscendClassStart" and not spec.allocNodes[nodeId] then
 								if node.ascendancyName then
 									respec = respec + 5
 								else
@@ -282,7 +282,7 @@ function TreeTabClass:OpenImportPopup()
 end
 
 function TreeTabClass:OpenExportPopup()
-	local treeLink = self.build.spec:EncodeURL("https://www.pathofexile.com/passive-skill-tree/"..(self.build.targetVersion == "2_6" and "2.6.2/" or "3.1.1/"))
+	local treeLink = self.build.spec:EncodeURL("https://www.pathofexile.com/passive-skill-tree/"..(self.build.targetVersion == "2_6" and "2.6.2/" or "3.2.0/"))
 	local popup
 	local controls = { }
 	controls.label = common.New("LabelControl", nil, 0, 20, 0, 16, "Passive tree link:")
