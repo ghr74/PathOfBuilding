@@ -1307,6 +1307,7 @@ function ItemsTabClass:CalcStatWeights()
 		["1% increased Lightning Damage"] = {{"LightningDamage", "INC", 1}},
 		["1% increased Physical Damage"] = {{"PhysicalDamage", "INC", 1}},
 		["1% increased Damage"] = {{"Damage", "INC", 1}},
+		["1% increased Elemental Damage"] = {{"ElementalDamage", "INC", 1}},
 	}
 	local item = nil;
 	local controls = { }
