@@ -20,7 +20,7 @@ local tempTable1 = { }
 -- Merge an instance of a buff, taking the highest value of each modifier
 local function mergeBuff(src, destTable, destKey)
 	if not destTable[destKey] then
-		destTable[destKey] = { }
+		destTable[destKey] = common.New("ModList")
 	end
 	local dest = destTable[destKey]
 	for _, mod in ipairs(src) do
@@ -128,6 +128,9 @@ local function doActorAttribsPoolsConditions(env, actor)
 			if actor.mainSkill.skillFlags.minion then
 				condList["UsedMinionSkillRecently"] = true
 			end
+			if actor.mainSkill.skillFlags.vaal then
+				condList["UsedVaalSkillRecently"] = true
+			end
 		end
 		if actor.mainSkill.skillFlags.hit and not actor.mainSkill.skillFlags.trap and not actor.mainSkill.skillFlags.mine and not actor.mainSkill.skillFlags.totem then
 			condList["HitRecently"] = true
@@ -155,7 +158,9 @@ local function doActorAttribsPoolsConditions(env, actor)
 	condList["IntHigherThanStr"] = output.Int > output.Str
 
 	-- Add attribute bonuses
-	modDB:NewMod("Life", "BASE", m_floor(output.Str / 2), "Strength")
+	if not modDB:Sum("FLAG", nil, "NoStrBonusToLife") then
+		modDB:NewMod("Life", "BASE", m_floor(output.Str / 2), "Strength")
+	end
 	local strDmgBonusRatioOverride = modDB:Sum("BASE", nil, "StrDmgBonusRatioOverride")
 	if strDmgBonusRatioOverride > 0 then
 		actor.strDmgBonus = round((output.Str + modDB:Sum("BASE", nil, "DexIntToMeleeBonus")) * strDmgBonusRatioOverride)
@@ -167,7 +172,9 @@ local function doActorAttribsPoolsConditions(env, actor)
 	if not modDB:Sum("FLAG", nil, "IronReflexes") then
 		modDB:NewMod("Evasion", "INC", round(output.Dex / 5), "Dexterity")
 	end
-	modDB:NewMod("Mana", "BASE", round(output.Int / 2), "Intelligence")
+	if not modDB:Sum("FLAG", nil, "NoIntBonusToMana") then
+		modDB:NewMod("Mana", "BASE", round(output.Int / 2), "Intelligence")
+	end
 	modDB:NewMod("EnergyShield", "INC", round(output.Int / 5), "Intelligence")
 
 	-- Life/mana pools
@@ -238,30 +245,33 @@ local function doActorMisc(env, actor)
 	output.FrenzyChargesMax = modDB:Sum("BASE", nil, "FrenzyChargesMax")
 	output.EnduranceChargesMax = modDB:Sum("BASE", nil, "EnduranceChargesMax")
 	output.SiphoningChargesMax = modDB:Sum("BASE", nil, "SiphoningChargesMax")
+	output.CrabBarriersMax = modDB:Sum("BASE", nil, "CrabBarriersMax")
 	if modDB:Sum("FLAG", nil, "UsePowerCharges") then
-		output.PowerCharges = output.PowerChargesMax
+		output.PowerCharges = modDB:Sum("OVERRIDE", nil, "PowerCharges") or output.PowerChargesMax
 	else
 		output.PowerCharges = 0
 	end
 	if modDB:Sum("FLAG", nil, "UseFrenzyCharges") then
-		output.FrenzyCharges = output.FrenzyChargesMax
+		output.FrenzyCharges = modDB:Sum("OVERRIDE", nil, "FrenzyCharges") or output.FrenzyChargesMax
 	else
 		output.FrenzyCharges = 0
 	end
 	if modDB:Sum("FLAG", nil, "UseEnduranceCharges") then
-		output.EnduranceCharges = output.EnduranceChargesMax
+		output.EnduranceCharges = modDB:Sum("OVERRIDE", nil, "EnduranceCharges") or output.EnduranceChargesMax
 	else
 		output.EnduranceCharges = 0
 	end
 	if modDB:Sum("FLAG", nil, "UseSiphoningCharges") then
-		output.SiphoningCharges = output.SiphoningChargesMax
+		output.SiphoningCharges = modDB:Sum("OVERRIDE", nil, "SiphoningCharges") or output.SiphoningChargesMax
 	else
 		output.SiphoningCharges = 0
 	end
+	output.CrabBarriers = m_min(modDB:Sum("OVERRIDE", nil, "CrabBarriers") or output.CrabBarriersMax, output.CrabBarriersMax)
 	modDB.multipliers["PowerCharge"] = output.PowerCharges
 	modDB.multipliers["FrenzyCharge"] = output.FrenzyCharges
 	modDB.multipliers["EnduranceCharge"] = output.EnduranceCharges
 	modDB.multipliers["SiphoningCharge"] = output.SiphoningCharges
+	modDB.multipliers["CrabBarrier"] = output.CrabBarriers
 
 	-- Process enemy modifiers 
 	for _, value in ipairs(modDB:Sum("LIST", nil, "EnemyModifier")) do
@@ -379,7 +389,7 @@ function calcs.perform(env)
 			env.minion.modDB:NewMod("Damage", "MORE", -50, "Base", 0, KeywordFlag.Ignite)
 			env.minion.modDB:NewMod("SkillData", "LIST", { key = "bleedBasePercent", value = 70/6 }, "Base")
 		end
-		env.minion.modDB:NewMod("Damage", "MORE", 500, "Base", 0, KeywordFlag.Bleed, { type = "EnemyCondition", var = "Moving" })
+		env.minion.modDB:NewMod("Damage", "MORE", 500, "Base", 0, KeywordFlag.Bleed, { type = "ActorCondition", actor = "enemy", var = "Moving" })
 		for _, mod in ipairs(env.minion.minionData.modList) do
 			env.minion.modDB:AddMod(mod)
 		end
@@ -537,6 +547,9 @@ function calcs.perform(env)
 				env.minion.modDB:AddMod(value.mod)
 			end
 		end
+		for _, name in ipairs(env.minion.modDB:Sum("LIST", nil, "Keystone")) do
+			env.minion.modDB:AddList(env.build.tree.keystoneMap[name].modList)
+		end
 		doActorAttribsPoolsConditions(env, env.minion)
 	end
 
@@ -674,10 +687,14 @@ function calcs.perform(env)
 					end
 				end
 			elseif buff.type == "Debuff" then
-				if env.mode_effective then
+				local stackCount = activeSkill.skillData.stackCount or 1
+				if env.mode_effective and stackCount > 0 then
 					activeSkill.debuffSkill = true
 					local srcList = common.New("ModList")
-					srcList:ScaleAddList(buff.modList, activeSkill.skillData.stackCount or 1)
+					srcList:ScaleAddList(buff.modList, stackCount)
+					if activeSkill.skillData.stackCount then
+						srcList:NewMod("Multiplier:"..buff.name.."Stack", "BASE", activeSkill.skillData.stackCount, buff.name)
+					end
 					mergeBuff(srcList, debuffs, buff.name)
 				end
 			elseif buff.type == "Curse" or buff.type == "CurseBuff" then
@@ -774,6 +791,7 @@ function calcs.perform(env)
 				if modDB:Sum("BASE", nil, "AvoidCurse") < 100 then
 					modDB.conditions["Cursed"] = true
 					modDB.multipliers["CurseOnSelf"] = (modDB.multipliers["CurseOnSelf"] or 0) + 1
+					modDB.conditions["AffectedBy"..value.name:gsub(" ","")] = true
 					local cfg = { skillName = value.name }
 					local inc = modDB:Sum("INC", cfg, "CurseEffectOnSelf") + gemModList:Sum("INC", nil, "CurseEffectAgainstPlayer")
 					local more = modDB:Sum("MORE", cfg, "CurseEffectOnSelf")
@@ -881,6 +899,9 @@ function calcs.perform(env)
 			actor.modDB:AddMod(value.mod)
 		end
 	end
+
+	-- Merge keystones again to catch any that were added by buffs
+	mergeKeystones(env)
 
 	-- Special handling for Dancing Dervish
 	if modDB:Sum("FLAG", nil, "DisableWeapons") then

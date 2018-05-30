@@ -210,11 +210,11 @@ skills["SupportBloodlust"] = {
 		flag("CannotBleed"), --"cannot_cause_bleeding" = ?
 	},
 	qualityMods = {
-		mod("PhysicalDamage", "INC", 0.5, ModFlag.Melee, 0, { type = "EnemyCondition", var = "Bleeding" }), --"melee_damage_vs_bleeding_enemies_+%" = 0.5
+		mod("PhysicalDamage", "INC", 0.5, ModFlag.Melee, 0, { type = "ActorCondition", actor = "enemy", var = "Bleeding" }), --"melee_damage_vs_bleeding_enemies_+%" = 0.5
 	},
 	levelMods = {
 		[1] = nil, 
-		[2] = mod("PhysicalDamage", "MORE", nil, ModFlag.Melee, 0, { type = "EnemyCondition", var = "Bleeding" }), --"support_bloodlust_melee_physical_damage_+%_final_vs_bleeding_enemies"
+		[2] = mod("PhysicalDamage", "MORE", nil, ModFlag.Melee, 0, { type = "ActorCondition", actor = "enemy", var = "Bleeding" }), --"support_bloodlust_melee_physical_damage_+%_final_vs_bleeding_enemies"
 	},
 	levels = {
 		[1] = { 18, 40, },
@@ -335,7 +335,7 @@ skills["SupportIncreasedBurningDamage"] = {
 	},
 	levelMods = {
 		[1] = nil, 
-		[2] = mod("FireDamage", "MORE", nil, ModFlag.Dot), --"support_burning_damage_+%_final"
+		[2] = mod("Damage", "MORE", nil, 0, KeywordFlag.Burning), --"support_burning_damage_+%_final"
 	},
 	levels = {
 		[1] = { 31, 35, },
@@ -765,6 +765,7 @@ skills["SupportAdditionalLevel"] = {
 	requireSkillTypes = { },
 	addSkillTypes = { },
 	excludeSkillTypes = { },
+	supportGemsOnly = true,
 	baseMods = {
 		mod("ManaCost", "MORE", 25), 
 	},

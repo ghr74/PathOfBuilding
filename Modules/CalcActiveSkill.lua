@@ -332,7 +332,7 @@ function calcs.buildActiveSkillModList(env, actor, activeSkill)
 	if skillTypes[SkillType.Attack] then
 		skillKeywordFlags = bor(skillKeywordFlags, KeywordFlag.Attack)
 	end
-	if skillTypes[SkillType.Spell] then
+	if skillTypes[SkillType.Spell] and not skillFlags.cast then
 		skillKeywordFlags = bor(skillKeywordFlags, KeywordFlag.Spell)
 	end
 
@@ -462,9 +462,12 @@ function calcs.buildActiveSkillModList(env, actor, activeSkill)
 			minion.type = minionType
 			minion.minionData = env.data.minions[minionType]
 			minion.level = activeSkill.skillData.minionLevelIsEnemyLevel and env.enemyLevel or activeSkill.skillData.minionLevel or activeSkill.skillData.levelRequirement
+			-- fix minion level between 1 and 100
+			minion.level = m_min(m_max(minion.level,1),100) 
 			minion.itemList = { }
 			minion.uses = activeGem.grantedEffect.minionUses
 			local attackTime = minion.minionData.attackTime * (1 - (minion.minionData.damageFixup or 0))
+
 			local damage = env.data.monsterDamageTable[minion.level] * minion.minionData.damage * attackTime
 			if activeGem.grantedEffect.minionHasItemSet then
 				if env.mode == "CALCS" and activeSkill == env.player.mainSkill then
@@ -545,7 +548,7 @@ function calcs.buildActiveSkillModList(env, actor, activeSkill)
 					cond = effectTag.effectCond,
 					modList = { },
 				}
-				if not effectTag.effectName then
+				if skillModList[i].source == activeGem.grantedEffect.modSource then
 					-- Inherit buff configuration from the active skill
 					buff.activeSkillBuff = true
 					buff.applyNotPlayer = activeSkill.skillData.buffNotPlayer

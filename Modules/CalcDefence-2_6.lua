@@ -46,8 +46,8 @@ function calcs.defence(env, actor)
 			max = 100
 			total = 100
 		else
-			max = modDB:Sum("BASE", nil, elem.."ResistMax")
-			total = modDB:Sum("BASE", nil, elem.."Resist", isElemental[elem] and "ElementalResist")
+			max = modDB:Sum("OVERRIDE", nil, elem.."ResistMax") or m_min(100, modDB:Sum("BASE", nil, elem.."ResistMax"))
+			total = modDB:Sum("OVERRIDE", nil, elem.."Resist") or modDB:Sum("BASE", nil, elem.."Resist", isElemental[elem] and "ElementalResist")
 		end
 		output[elem.."Resist"] = m_min(total, max)
 		output[elem.."ResistTotal"] = total
@@ -588,6 +588,10 @@ function calcs.defence(env, actor)
 					s_format("= %.2fs", output.BlockDuration)
 				}
 			end
+		end
+		output.LightRadiusMod = calcLib.mod(modDB, nil, "LightRadius")
+		if breakdown then
+			breakdown.LightRadiusMod = breakdown.mod(nil, "LightRadius")
 		end
 	end
 end

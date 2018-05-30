@@ -47,8 +47,8 @@ function calcs.defence(env, actor)
 			max = 100
 			total = 100
 		else
-			max = modDB:Sum("BASE", nil, elem.."ResistMax")
-			total = modDB:Sum("BASE", nil, elem.."Resist", isElemental[elem] and "ElementalResist")
+			max = modDB:Sum("OVERRIDE", nil, elem.."ResistMax") or m_min(100, modDB:Sum("BASE", nil, elem.."ResistMax"))
+			total = modDB:Sum("OVERRIDE", nil, elem.."Resist") or modDB:Sum("BASE", nil, elem.."Resist", isElemental[elem] and "ElementalResist")
 		end
 		output[elem.."Resist"] = m_min(total, max)
 		output[elem.."ResistTotal"] = total
@@ -57,7 +57,6 @@ function calcs.defence(env, actor)
 			breakdown[elem.."Resist"] = {
 				"Max: "..max.."%",
 				"Total: "..total.."%",
-				"In hideout: "..(total + 60).."%",
 			}
 		end
 	end
@@ -243,7 +242,7 @@ function calcs.defence(env, actor)
 		local inc = modDB:Sum("INC", nil, "ManaRegen")
 		local more = modDB:Sum("MORE", nil, "ManaRegen")
 		local regen = base * (1 + inc/100) * more
-		output.ManaRegen = round(regen * output.ManaRecoveryRateMod, 1)
+		output.ManaRegen = round(regen * output.ManaRecoveryRateMod, 1) - modDB:Sum("BASE", nil, "ManaDegen")
 		if breakdown then
 			breakdown.ManaRegen = { }
 			breakdown.multiChain(breakdown.ManaRegen, {
@@ -481,7 +480,7 @@ function calcs.defence(env, actor)
 				rowList = { },
 				colList = {
 					{ label = "Type", key = "type" },
-					{ label = "Migitation", key = "resist" },
+					{ label = "Mitigation", key = "resist" },
 					{ label = "Taken", key = "taken" },
 					{ label = "Final", key = "final" },
 				},
@@ -612,6 +611,10 @@ function calcs.defence(env, actor)
 					s_format("= %.2fs", output.BlockDuration)
 				}
 			end
+		end
+		output.LightRadiusMod = calcLib.mod(modDB, nil, "LightRadius")
+		if breakdown then
+			breakdown.LightRadiusMod = breakdown.mod(nil, "LightRadius")
 		end
 	end
 end

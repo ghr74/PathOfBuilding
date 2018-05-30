@@ -35,6 +35,7 @@ function calcs.initModDB(env, modDB)
 	modDB:NewMod("MovementSpeed", "INC", -30, "Base", { type = "Condition", var = "Maimed" })
 	modDB:NewMod("Condition:Burning", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "Condition", var = "Ignited" })
 	modDB:NewMod("Condition:Chilled", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "Condition", var = "Frozen" })
+	modDB:NewMod("Condition:Poisoned", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "MultiplierThreshold", var = "PoisonStack", threshold = 1 })
 	modDB:NewMod("Chill", "FLAG", true, "Base", { type = "Condition", var = "Chilled" })
 	modDB:NewMod("Freeze", "FLAG", true, "Base", { type = "Condition", var = "Frozen" })
 	modDB:NewMod("Fortify", "FLAG", true, "Base", { type = "Condition", var = "Fortify" })
@@ -76,7 +77,7 @@ function calcs.buildModListForNode(env, node)
 
 	-- Run second pass radius jewels
 	for _, rad in pairs(env.radiusJewelList) do
-		if rad.nodes[node.id] and (rad.type == "Threshold" or (rad.type == "Self" and node.alloc)) then
+		if rad.nodes[node.id] and (rad.type == "Threshold" or (rad.type == "Self" and env.allocNodes[node.id]) or (rad.type == "SelfUnalloc" and not env.allocNodes[node.id])) then
 			rad.func(node, modList, rad.data)
 		end
 	end
@@ -213,9 +214,9 @@ function calcs.initEnv(build, mode, override)
 	modDB:NewMod("PhysicalDamage", "MORE", 20, "Base", ModFlag.Attack, { type = "Condition", var = "DualWielding" })
 	modDB:NewMod("BlockChance", "BASE", 15, "Base", { type = "Condition", var = "DualWielding" })
 	if build.targetVersion == "2_6" then
-		modDB:NewMod("Damage", "MORE", 500, "Base", 0, KeywordFlag.Bleed, { type = "EnemyCondition", var = "Moving" })
+		modDB:NewMod("Damage", "MORE", 500, "Base", 0, KeywordFlag.Bleed, { type = "ActorCondition", actor = "enemy", var = "Moving" })
 	else
-		modDB:NewMod("Damage", "MORE", 200, "Base", 0, KeywordFlag.Bleed, { type = "EnemyCondition", var = "Moving" }, { type = "Condition", var = "NoExtraBleedDamageToMovingEnemy", neg = true })
+		modDB:NewMod("Damage", "MORE", 200, "Base", 0, KeywordFlag.Bleed, { type = "ActorCondition", actor = "enemy", var = "Moving" }, { type = "Condition", var = "NoExtraBleedDamageToMovingEnemy", neg = true })
 	end
 
 	-- Add bandit mods
@@ -306,6 +307,7 @@ function calcs.initEnv(build, mode, override)
 	else
 		nodes = env.spec.allocNodes
 	end
+	env.allocNodes = nodes
 
 	-- Set up requirements tracking
 	env.requirementsTable = { }
@@ -346,7 +348,7 @@ function calcs.initEnv(build, mode, override)
 			if not nodes[slot.nodeId] then
 				item = nil
 			elseif item and item.jewelRadiusIndex then
-				-- Jewel has a radius,  add it to the list
+				-- Jewel has a radius, add it to the list
 				local funcList = item.jewelData.funcList or { { type = "Self", func = function(node, out, data)
 					-- Default function just tallies all stats in radius
 					if node then
