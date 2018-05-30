@@ -32,6 +32,7 @@ skills["Arc"] = {
 		skill("damageEffectiveness", 0.7), 
 		skill("CritChance", 5), 
 		mod("EnemyShockChance", "BASE", 10), --"base_chance_to_shock_%" = 10
+		mod("Damage", "MORE", 15, nil, nil, { type = "PerStat", stat = "ChainRemaining" })
 	},
 	qualityMods = {
 		mod("EnemyShockChance", "BASE", 0.5), --"base_chance_to_shock_%" = 0.5
@@ -64,7 +65,7 @@ skills["Arc"] = {
 		[17] = { 64, 24, 35, 671, 6, 26, },
 		[18] = { 66, 25, 39, 736, 6, 27, },
 		[19] = { 68, 25, 43, 808, 6, 28, },
-		[20] = { 70, 26, 47, 886, 7, 29, },
+		[20] = { 70, 26, 152, 862, 7, 29, },
 		[21] = { 72, 26, 51, 971, 7, 30, },
 		[22] = { 74, 26, 56, 1064, 7, 31, },
 		[23] = { 76, 27, 61, 1164, 7, 32, },
