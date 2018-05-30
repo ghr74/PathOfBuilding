@@ -1302,6 +1302,7 @@ function ItemsTabClass:CalcStatWeights()
 		["Adds 1 to 1 Physical Damage to Attacks"] = {{"PhysicalMin", "BASE", 1}, {"PhysicalMax", "BASE", 1}},
 		["Damage Penetrates 1% Elemental Resistance"] = {{"ElementalPenetration", "BASE", 1}},
 		["Gain 1% of Physical Damage as Extra Fire Damage"] = {{"PhysicalDamageGainAsFire", "BASE", 1}},
+		["Gain 1% of Physical Damage as Extra Cold Damage"] = {{"PhysicalDamageGainAsCold", "BASE", 1}},
 		["1% increased Cold Damage"] = {{"ColdDamage", "INC", 1}},
 		["1% increased Fire Damage"] = {{"FireDamage", "INC", 1}},
 		["1% increased Lightning Damage"] = {{"LightningDamage", "INC", 1}},
