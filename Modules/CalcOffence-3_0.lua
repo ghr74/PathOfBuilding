@@ -177,6 +177,14 @@ function calcs.offence(env, actor)
 			end
 		end
 	end
+	if modDB:Sum("FLAG", nil, "MinionAttackSpeedAppliesToPlayer") then
+		-- Minion Attack Speed conversion from Spiritual Command
+		for _, value in ipairs(modDB:Sum("LIST", env.player.mainSkill.skillCfg, "MinionModifier")) do
+			if value.mod.name == "Speed" and value.mod.type == "INC" and band(value.mod.flags, ModFlag.Attack) ~= 0 then
+				modDB:AddMod(value.mod)
+			end
+		end
+	end
 	if modDB:Sum("FLAG", nil, "SpellDamageAppliesToAttacks") then
 		-- Spell Damage conversion from Crown of Eyes
 		for i, mod in ipairs(modDB.mods.Damage or { }) do
@@ -220,7 +228,7 @@ function calcs.offence(env, actor)
 	if modDB:Sum("FLAG", nil, "CastSpeedAppliesToTrapThrowingSpeed") then
 		-- Cast Speed conversion from Slavedriver's Hand
 		for i, mod in ipairs(modDB.mods.Speed or { }) do
-			if mod.type == "INC" and band(mod.flags, ModFlag.Cast) ~= 0 then
+			if mod.type == "INC" and (mod.flags == 0 or band(mod.flags, ModFlag.Cast) ~= 0) then
 				modDB:NewMod("TrapThrowingSpeed", "INC", mod.value, mod.source, band(mod.flags, bnot(ModFlag.Cast), bnot(ModFlag.Attack)), mod.keywordFlags, unpack(mod))
 			end
 		end

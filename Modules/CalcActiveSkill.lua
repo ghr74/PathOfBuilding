@@ -323,6 +323,9 @@ function calcs.buildActiveSkillModList(env, actor, activeSkill)
 	if skillTypes[SkillType.ChaosSkill] then
 		skillKeywordFlags = bor(skillKeywordFlags, KeywordFlag.Chaos)
 	end
+	if skillFlags.weapon1Attack and band(activeSkill.weapon1Flags, ModFlag.Bow) ~= 0 then
+		skillKeywordFlags = bor(skillKeywordFlags, KeywordFlag.Bow)
+	end
 	if skillFlags.totem then
 		skillKeywordFlags = bor(skillKeywordFlags, KeywordFlag.Totem)
 	elseif skillFlags.trap then
@@ -361,6 +364,7 @@ function calcs.buildActiveSkillModList(env, actor, activeSkill)
 		skillName = activeGrantedEffect.name:gsub("^Vaal ",""):gsub("Summon Skeletons","Summon Skeleton"), -- This allows modifiers that target specific skills to also apply to their Vaal counterpart
 		summonSkillName = activeSkill.summonSkill and activeSkill.summonSkill.activeEffect.grantedEffect.name,
 		skillGem = activeEffect.gemData,
+		skillGrantedEffect = activeGrantedEffect,
 		skillPart = activeSkill.skillPart,
 		skillTypes = activeSkill.skillTypes,
 		skillCond = { },
