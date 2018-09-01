@@ -180,8 +180,8 @@ function calcs.offence(env, actor)
 	if modDB:Sum("FLAG", nil, "MinionAttackSpeedAppliesToPlayer") then
 		-- Minion Attack Speed conversion from Spiritual Command
 		for _, value in ipairs(modDB:Sum("LIST", env.player.mainSkill.skillCfg, "MinionModifier")) do
-			if value.mod.name == "Speed" and value.mod.type == "INC" and band(value.mod.flags, ModFlag.Attack) ~= 0 then
-				modDB:AddMod(value.mod)
+			if value.mod.name == "Speed" and value.mod.type == "INC" and (value.mod.flags == 0 or band(value.mod.flags, ModFlag.Attack) ~= 0) then
+				modDB:NewMod("Speed", "INC", value.mod.value, value.mod.source, ModFlag.Attack, value.mod.keywordFlags, unpack(value.mod))
 			end
 		end
 	end
@@ -675,7 +675,10 @@ function calcs.offence(env, actor)
 		end
 
 		-- Calculate attack/cast speed
-		if skillData.timeOverride then
+		if mainSkill.skillTypes[SkillType.Instant] then
+			output.Time = 0
+			output.Speed = 0
+		elseif skillData.timeOverride then
 			output.Time = skillData.timeOverride
 			output.Speed = 1 / output.Time
 		else
@@ -726,6 +729,7 @@ function calcs.offence(env, actor)
 		-- Combine hit chance and attack speed
 		combineStat("HitChance", "AVERAGE")
 		combineStat("Speed", "AVERAGE")
+		combineStat("HitSpeed", "OR")
 		if output.Speed == 0 then
 			output.Time = 0
 		else
