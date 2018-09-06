@@ -1,3 +1,14 @@
+### 1.4.107 - 2018/09/01
+ * The per-stage bonus for Scourge Arrow now correctly applies to the thorn arrows
+
+### 1.4.106 - 2018/09/01
+ * Added support for the "50% less X Damage" modifiers on the Combat Focus jewels
+
+### 1.4.105 - 2018/09/01
+ * Added Helmet enchantments for the new skills
+ * Applied balance changes to existing unique items
+ * Applied the change to base Trap Throwing Time from 3.4
+
 ### 1.4.104 - 2018/09/01
  * Fixed error message caused by Spiritual Command
 
