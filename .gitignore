@@ -254,11 +254,6 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 *.lnk
-/Export/.~lock.data.ods#
-/Export/data.ods
-/Export/test.lua
-*.csv
-/Export/*stat_descriptions.txt
 /Export/Tree/PassiveSkillGraph.psg
 /Export/Tree/passives
 /Export/Tree/skills-3.jpg
@@ -267,3 +262,6 @@ ModelManifest.xml
 treeupdate.bat
 /Export/002460_static_strike_explosion_damage_pluspercent_final.txt
 /Export/skillpopup_stat_filters.txt
+/Export/Data
+/Export/DatView
+/Export/StatDescriptions

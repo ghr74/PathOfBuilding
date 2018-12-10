@@ -3,7 +3,6 @@
 -- Module: Mod Parser for 3.0
 -- Parser function for modifier names
 --
-
 local pairs = pairs
 local ipairs = ipairs
 local t_insert = table.insert
@@ -230,12 +229,18 @@ local modNameList = {
 	-- Charges
 	["maximum power charge"] = "PowerChargesMax",
 	["maximum power charges"] = "PowerChargesMax",
+	["minimum power charge"] = "PowerChargesMin",
+	["minimum power charges"] = "PowerChargesMin",
 	["power charge duration"] = "PowerChargesDuration",
 	["maximum frenzy charge"] = "FrenzyChargesMax",
 	["maximum frenzy charges"] = "FrenzyChargesMax",
+	["minimum frenzy charge"] = "FrenzyChargesMin",
+	["minimum frenzy charges"] = "FrenzyChargesMin",
 	["frenzy charge duration"] = "FrenzyChargesDuration",
 	["maximum endurance charge"] = "EnduranceChargesMax",
 	["maximum endurance charges"] = "EnduranceChargesMax",
+	["minimum endurance charge"] = "EnduranceChargesMin",
+	["minimum endurance charges"] = "EnduranceChargesMin",
 	["endurance charge duration"] = "EnduranceChargesDuration",
 	["maximum frenzy charges and maximum power charges"] = { "FrenzyChargesMax", "PowerChargesMax" },
 	["endurance, frenzy and power charge duration"] = { "PowerChargesDuration", "FrenzyChargesDuration", "EnduranceChargesDuration" },
@@ -289,6 +294,7 @@ local modNameList = {
 	["maximum number of summoned holy relics"] = "ActiveHolyRelicLimit",
 	["minion duration"] = { "Duration", tag = { type = "SkillType", skillType = SkillType.CreateMinion } },
 	["skeleton duration"] = { "Duration", tag = { type = "SkillName", skillName = "Summon Skeleton" } },
+	["sentinel of dominance duration"] = { "Duration", tag = { type = "SkillName", skillName = "Dominating Blow" } },
 	-- Other skill modifiers
 	["radius"] = "AreaOfEffect",
 	["radius of area skills"] = "AreaOfEffect",
@@ -310,6 +316,8 @@ local modNameList = {
 	["melee weapon and unarmed range"] = { "MeleeWeaponRange", "UnarmedRange" },
 	["melee weapon and unarmed attack range"] = { "MeleeWeaponRange", "UnarmedRange" },
 	["to deal double damage"] = "DoubleDamageChance",
+	["activation frequency"] = "BrandActivationFrequency",
+	["brand activation frequency"] = "BrandActivationFrequency",
 	-- Buffs
 	["onslaught effect"] = "OnslaughtEffect",
 	["fortify duration"] = "FortifyDuration",
@@ -499,6 +507,7 @@ local modFlagList = {
 	["with elemental skills"] = { keywordFlags = bor(KeywordFlag.Lightning, KeywordFlag.Cold, KeywordFlag.Fire) },
 	["with chaos skills"] = { keywordFlags = KeywordFlag.Chaos },
 	["with channelling skills"] = { tag = { type = "SkillType", skillType = SkillType.Channelled } },
+	["with brand skills"] = { tag = { type = "SkillType", skillType = SkillType.Brand } },
 	["zombie"] = { addToMinion = true, addToMinionTag = { type = "SkillName", skillName = "Raise Zombie" } },
 	["raised zombie"] = { addToMinion = true, addToMinionTag = { type = "SkillName", skillName = "Raise Zombie" } },
 	["skeleton"] = { addToMinion = true, addToMinionTag = { type = "SkillName", skillName = "Summon Skeleton" } },
@@ -565,6 +574,7 @@ local preFlagList = {
 	["^fire skills [hd][ae][va][el] "] = { keywordFlags = KeywordFlag.Fire },
 	["^chaos skills [hd][ae][va][el] "] = { keywordFlags = KeywordFlag.Chaos },
 	["^vaal skills [hd][ae][va][el] "] = { keywordFlags = KeywordFlag.Vaal },
+	["^brand skills [hd][ae][va][el] "] = { keywordFlags = KeywordFlag.Brand },
 	["^skills [hdfg][aei][vari][eln] "] = { },
 	["^left ring slot: "] = { tag = { type = "SlotNumber", num = 1 } },
 	["^right ring slot: "] = { tag = { type = "SlotNumber", num = 2 } },
@@ -815,6 +825,8 @@ local modTagList = {
 	["if you detonated mines recently"] = { tag = { type = "Condition", var = "DetonatedMinesRecently" } },
 	["if energy shield recharge has started recently"] = { tag = { type = "Condition", var = "EnergyShieldRechargeRecently" } },
 	["when cast on frostbolt"] = { tag = { type = "Condition", var = "CastOnFrostbolt" } },
+	["branded enemy's"] = { tag = { type = "Condition", var = "BrandAttachedToEnemy" } },
+	["to enemies they're attached to"] = { tag = { type = "Condition", var = "BrandAttachedToEnemy" } },
 	-- Enemy status conditions
 	["at close range"] = { tag = { type = "Condition", var = "AtCloseRange" }, flags = ModFlag.Hit },
 	["against rare and unique enemies"] = { tag = { type = "Condition", var = "EnemyRareOrUnique" }, keywordFlags = KeywordFlag.Hit },
@@ -1421,10 +1433,8 @@ local specialModList = {
 	["items and gems have (%d+)%% reduced attribute requirements"] = function(num) return { mod("GlobalAttributeRequirements", "INC", -num) } end,
 	["items and gems have (%d+)%% increased attribute requirements"] = function(num) return { mod("GlobalAttributeRequirements", "INC", num) } end,
 	["mana reservation of herald skills is always (%d+)%%"] = function(num) return { mod("SkillData", "LIST", { key = "manaCostForced", value = num }, { type = "SkillType", skillType = SkillType.Herald }) } end,
-	["aspect of the cat reserves no mana"] = { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillName", skillName = "Aspect of the Cat" }) },
-	["wrath reserves no mana"] = { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillName", skillName = "Wrath" }) },
-	["hatred reserves no mana"] = { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillName", skillName = "Hatred" }) },
-	["anger reserves no mana"] = { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillName", skillName = "Anger" }) },
+	["([%a%s]+) reserves no mana"] = function(_, name) return { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillId", skillId = gemIdLookup[name] }) } end,
+	["banner skills reserve no mana"] = { mod("SkillData", "LIST", { key = "manaCostForced", value = 0 }, { type = "SkillName", skillNameList = { "Dread Banner", "War Banner" } }) },
 	["your spells are disabled"] = { flag("DisableSkill", { type = "SkillType", skillType = SkillType.Spell }) },
 	["strength's damage bonus instead grants (%d+)%% increased melee physical damage per (%d+) strength"] = function(num, _, perStr) return { mod("StrDmgBonusRatioOverride", "BASE", num / tonumber(perStr)) } end,
 	["while in her embrace, take ([%d%.]+)%% of your total maximum life and energy shield as fire damage per second per level"] = function(num) return { 
@@ -1456,6 +1466,8 @@ local specialModList = {
 		mod("Multiplier:IncinerateStage", "BASE", num, 0, 0, { type = "SkillPart", skillPart = 3 })
 	} end,
 	["scourge arrow has (%d+)%% chance to poison per stage"] = function(num) return { mod("PoisonChance", "BASE", num, { type = "SkillName", skillName = "Scourge Arrow" }, { type = "Multiplier", var = "ScourgeArrowStage" }) } end,
+	["winter orb has %+(%d+) maximum stages"] = function(num) return { mod("Multiplier:WinterOrbMaxStage", "BASE", num) } end,
+	["winter orb has (%d+)%% increased area of effect per stage"] = function(num) return { mod("AreaOfEffect", "INC", num, { type = "SkillName", skillName = "Winter Orb"}, { type = "Multiplier", var = "WinterOrbStage" }) } end,
 	-- Display-only modifiers
 	["prefixes:"] = { },
 	["suffixes:"] = { },
@@ -1727,7 +1739,7 @@ local jewelSelfUnallocFuncs = {
 	["Grants all bonuses of Unallocated Small Passive Skills in Radius"] = function(node, out, data)
 		if node then
 			if node.type == "Normal" then
-				data.modList = data.modList or common.New("ModList")
+				data.modList = data.modList or new("ModList")
 				data.modList:AddList(out)
 			end
 		elseif data.modList then
