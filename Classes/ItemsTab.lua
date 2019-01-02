@@ -1347,10 +1347,10 @@ function ItemsTabClass:CalcStatWeights()
 		output = calcFunc({addMods = v})
 		outstr = outstr..k..": "..tostring(math.floor(((output.TotalDPS-calcBase.TotalDPS)/10)+0.5)).."\n";
 	end
-	controls.edit = common.New("EditControl", nil, 0, 40, 480, 420, "", nil, "^%C\t\n", nil, nil, 14)
+	controls.edit = new("EditControl", nil, 0, 40, 480, 420, "", nil, "^%C\t\n", nil, nil, 14)
 	controls.edit:SetText("Stat Weights go here:\n"..outstr)
 	controls.edit.font = "FIXED"
-	controls.cancel = common.New("ButtonControl", nil, 0, 470, 80, 20, "Cancel", function()
+	controls.cancel = new("ButtonControl", nil, 0, 470, 80, 20, "Cancel", function()
 		main:ClosePopup()
 	end)
 	main:OpenPopup(500, 500, "Stat Weights", controls, nil, "edit")
