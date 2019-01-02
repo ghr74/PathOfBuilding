@@ -12,6 +12,8 @@ local m_floor = math.floor
 local sortDropList = { 
 	{ label = "Sort by name", sortMode = "NAME" },
 	{ label = "Sort by DPS", sortMode = "DPS" },
+	{ label = "Sort by Crit", sortMode = "CRIT" },
+	{ label = "Sort by Evasion", sortMode = "EVASION"},
 }
 
 local ItemDBClass = newClass("ItemDBControl", "ListControl", function(self, anchor, x, y, width, height, itemsTab, db, dbType)
@@ -23,6 +25,8 @@ local ItemDBClass = newClass("ItemDBControl", "ListControl", function(self, anch
 	self.sortControl = { 
 		NAME = { key = "name", dir = "ASCEND", func = function(a,b) return a:gsub("^The ","") < b:gsub("^The ","") end },
 		DPS = { key = "CombinedDPS", dir = "DESCEND" },
+		CRIT = { key = "CritChance", dir = "DESCEND" },
+		EVASION = { key = "Evasion", dir = "DESCEND" },
 	}
 	self.sortMode = "NAME"
 	local leagueFlag = { }
@@ -176,6 +180,44 @@ function ItemDBClass:ListBuilder()
 				if self.itemsTab:IsItemValidForSlot(item, slotName) and not slot.inactive and (not slot.weaponSet or slot.weaponSet == (self.itemsTab.activeItemSet.useSecondWeaponSet and 2 or 1)) then
 					local output = calcFunc(item.base.flask and { toggleFlask = item } or { repSlotName = slotName, repItem = item })
 					item.CombinedDPS = m_max(item.CombinedDPS, output.Minion and output.Minion.CombinedDPS or output.CombinedDPS)				
+				end
+			end
+			local now = GetTime()
+			if now - start > 50 then
+				self.defaultText = "^7Sorting... ("..m_floor(itemIndex/#list*100).."%)"
+				coroutine.yield()
+				start = now
+			end
+		end
+	elseif self.sortMode == "CRIT" then
+		local start = GetTime()
+		local calcFunc, calcBase = self.itemsTab.build.calcsTab:GetMiscCalculator(self.build)
+		local baseDPS = calcBase.Minion and calcBase.Minion.CritChance or calcBase.CritChance
+		for itemIndex, item in ipairs(list) do
+			item.CritChance = 0
+			for slotName, slot in pairs(self.itemsTab.slots) do
+				if self.itemsTab:IsItemValidForSlot(item, slotName) and not slot.inactive and (not slot.weaponSet or slot.weaponSet == (self.itemsTab.activeItemSet.useSecondWeaponSet and 2 or 1)) then
+					local output = calcFunc(item.base.flask and { toggleFlask = item } or { repSlotName = slotName, repItem = item })
+					item.CritChance = m_max(item.CritChance, output.CritChance or 0)				
+				end
+			end
+			local now = GetTime()
+			if now - start > 50 then
+				self.defaultText = "^7Sorting... ("..m_floor(itemIndex/#list*100).."%)"
+				coroutine.yield()
+				start = now
+			end
+		end
+	elseif self.sortMode == "EVASION" then
+		local start = GetTime()
+		local calcFunc, calcBase = self.itemsTab.build.calcsTab:GetMiscCalculator(self.build)
+		local baseDPS = calcBase.Minion and calcBase.Minion.Evasion or calcBase.Evasion
+		for itemIndex, item in ipairs(list) do
+			item.Evasion = 0
+			for slotName, slot in pairs(self.itemsTab.slots) do
+				if self.itemsTab:IsItemValidForSlot(item, slotName) and not slot.inactive and (not slot.weaponSet or slot.weaponSet == (self.itemsTab.activeItemSet.useSecondWeaponSet and 2 or 1)) then
+					local output = calcFunc(item.base.flask and { toggleFlask = item } or { repSlotName = slotName, repItem = item })
+					item.Evasion = m_max(item.Evasion, output.Evasion or 0)				
 				end
 			end
 			local now = GetTime()
