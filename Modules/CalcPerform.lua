@@ -268,7 +268,7 @@ local function doActorMisc(env, actor)
 	else
 		output.EnduranceCharges = 0
 	end
-	output.EnduranceCharges = m_max(output.EnduranceCharges, output.FrenzyChargesMin)
+	output.EnduranceCharges = m_max(output.EnduranceCharges, output.EnduranceChargesMin)
 	output.RemovableEnduranceCharges = output.EnduranceCharges - output.EnduranceChargesMin
 	if modDB:Flag(nil, "UseSiphoningCharges") then
 		output.SiphoningCharges = modDB:Override(nil, "SiphoningCharges") or output.SiphoningChargesMax
@@ -523,7 +523,7 @@ function calcs.perform(env)
 			local skillModList = activeSkill.skillModList
 			local skillCfg = activeSkill.skillCfg
 			local suffix = activeSkill.skillTypes[SkillType.ManaCostPercent] and "Percent" or "Base"
-			local baseVal = activeSkill.skillData.manaCostOverride or activeSkill.skillData.manaCost or 0
+			local baseVal = activeSkill.skillData.manaCostOverride or activeSkill.activeEffect.grantedEffectLevel.manaCost or 0
 			local mult = skillModList:More(skillCfg, "ManaCost")
 			local more = skillModList:More(skillCfg, "ManaReserved")
 			local inc = skillModList:Sum("INC", skillCfg, "ManaReserved")
