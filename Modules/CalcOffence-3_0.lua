@@ -425,6 +425,14 @@ function calcs.offence(env, actor, activeSkill)
 		end
 	end
 
+	-- Run skill setup function
+	do
+		local setupFunc = activeSkill.activeEffect.grantedEffect.setupFunc
+		if setupFunc then
+			setupFunc(activeSkill, output)
+		end
+	end
+
 	-- Skill duration
 	local debuffDurationMult
 	if env.mode_effective then
@@ -476,13 +484,29 @@ function calcs.offence(env, actor, activeSkill)
 				t_insert(breakdown.DurationSecondary, s_format("= %.2fs", output.DurationSecondary))
 			end
 		end
-	end
-
-	-- Run skill setup function
-	do
-		local setupFunc = activeSkill.activeEffect.grantedEffect.setupFunc
-		if setupFunc then
-			setupFunc(activeSkill, output)
+		durationBase = (skillData.auraDuration or 0)
+		if durationBase > 0 then
+			local durationMod = calcLib.mod(skillModList, skillCfg, "Duration", "SkillAndDamagingAilmentDuration")
+			output.AuraDuration = durationBase * durationMod
+			if breakdown and output.AuraDuration ~= durationBase then
+				breakdown.AuraDuration = {
+					s_format("%.2fs ^8(base)", durationBase),
+					s_format("x %.2f ^8(duration modifier)", durationMod),
+					s_format("= %.2fs", output.AuraDuration),
+				}
+			end
+		end
+		durationBase = (skillData.reserveDuration or 0)
+		if durationBase > 0 then
+			local durationMod = calcLib.mod(skillModList, skillCfg, "Duration", "SkillAndDamagingAilmentDuration")
+			output.ReserveDuration = durationBase * durationMod
+			if breakdown and output.ReserveDuration ~= durationBase then
+				breakdown.ReserveDuration = {
+					s_format("%.2fs ^8(base)", durationBase),
+					s_format("x %.2f ^8(duration modifier)", durationMod),
+					s_format("= %.2fs", output.ReserveDuration),
+				}
+			end
 		end
 	end
 
@@ -688,7 +712,7 @@ function calcs.offence(env, actor, activeSkill)
 		end
 
 		-- Calculate attack/cast speed
-		if activeSkill.skillTypes[SkillType.Instant] or skillFlags.forceInstant then
+		if activeSkill.activeEffect.grantedEffect.castTime == 0 and not skillData.castTimeOverride then
 			output.Time = 0
 			output.Speed = 0
 		elseif skillData.timeOverride then
@@ -704,7 +728,7 @@ function calcs.offence(env, actor, activeSkill)
 					baseTime = 1 / ( source.AttackRate or 1 ) + skillModList:Sum("BASE", cfg, "Speed")
 				end
 			else
-				baseTime = activeSkill.activeEffect.grantedEffect.castTime or 1
+				baseTime = skillData.castTimeOverride or activeSkill.activeEffect.grantedEffect.castTime or 1
 			end
 			local inc = skillModList:Sum("INC", cfg, "Speed")
 			local more = skillModList:More(cfg, "Speed")
@@ -777,19 +801,15 @@ function calcs.offence(env, actor, activeSkill)
 				output.CritChance = 100
 			else
 				local base = skillModList:Sum("BASE", cfg, "CritChance")
-				local inc = skillModList:Sum("INC", cfg, "CritChance")
+				local inc = skillModList:Sum("INC", cfg, "CritChance") + (env.mode_effective and enemyDB:Sum("INC", nil, "SelfCritChance") or 0)
 				local more = skillModList:More(cfg, "CritChance")
-				local enemyExtra = env.mode_effective and enemyDB:Sum("BASE", nil, "SelfExtraCritChance") or 0
 				output.CritChance = (baseCrit + base) * (1 + inc / 100) * more
 				local preCapCritChance = output.CritChance
-				output.CritChance = m_min(output.CritChance, 95)
+				output.CritChance = m_min(output.CritChance, 100)
 				if (baseCrit + base) > 0 then
-					output.CritChance = m_max(output.CritChance, 5)
+					output.CritChance = m_max(output.CritChance, 0)
 				end
 				output.PreEffectiveCritChance = output.CritChance
-				if enemyExtra ~= 0 then
-					output.CritChance = m_min(output.CritChance + enemyExtra, 100)
-				end
 				local preLuckyCritChance = output.CritChance
 				if env.mode_effective and skillModList:Flag(cfg, "CritChanceLucky") then
 					output.CritChance = (1 - (1 - output.CritChance / 100) ^ 2) * 100
@@ -812,13 +832,9 @@ function calcs.offence(env, actor, activeSkill)
 						t_insert(breakdown.CritChance, s_format("x %.2f", more).." ^8(more/less)")
 					end
 					t_insert(breakdown.CritChance, s_format("= %.2f%% ^8(crit chance)", output.PreEffectiveCritChance))
-					if preCapCritChance > 95 then
-						local overCap = preCapCritChance - 95
+					if preCapCritChance > 100 then
+						local overCap = preCapCritChance - 100
 						t_insert(breakdown.CritChance, s_format("Crit is overcapped by %.2f%% (%d%% increased Critical Strike Chance)", overCap, overCap / more / (baseCrit + base) * 100))
-					end
-					if enemyExtra ~= 0 then
-						t_insert(breakdown.CritChance, s_format("+ %g ^8(extra chance for enemy to be crit)", enemyExtra))
-						t_insert(breakdown.CritChance, s_format("= %.2f%% ^8(chance to crit against enemy)", preLuckyCritChance))
 					end
 					if env.mode_effective and skillModList:Flag(cfg, "CritChanceLucky") then
 						t_insert(breakdown.CritChance, "Crit Chance is Lucky:")
@@ -983,7 +999,7 @@ function calcs.offence(env, actor, activeSkill)
 							taken = taken + enemyDB:Sum("INC", nil, "TrapMineDamageTaken")
 						end
 						local effMult = (1 + taken / 100)
-						if not isElemental[damageType] or not (skillModList:Flag(cfg, "IgnoreElementalResistances", "Ignore"..damageType.."Resistance") or enemyDB:Flag(nil, "SelfIgnore"..damageType.."Resistance")) then
+						if not skillModList:Flag(cfg, "Ignore"..damageType.."Resistance", isElemental[damageType] and "IgnoreElementalResistances" or nil) and not enemyDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") then
 							effMult = effMult * (1 - (resist - pen) / 100)
 						end
 						min = min * effMult

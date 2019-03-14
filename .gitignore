@@ -6,10 +6,12 @@ Settings.xml
 *.json
 TreeData/
 Builds/
-Export/Bases/*.lua
-Export/Skills/*.lua
-Export/Minions/*.lua
-Export/stat_descriptions.txt
+/Export/Tree/PassiveSkillGraph.psg
+/Export/Tree/passives
+/Export/Tree/skills-3.jpg
+/Export/Tree/skills-disabled-3.jpg
+/Export/Tree/groups-3.png
+/Export/spec.bak
 
 # User-specific files
 *.suo
@@ -254,6 +256,7 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 *.lnk
+<<<<<<< HEAD
 /Export/Tree/PassiveSkillGraph.psg
 /Export/Tree/passives
 /Export/Tree/skills-3.jpg
@@ -265,3 +268,5 @@ treeupdate.bat
 /Export/Data
 /Export/DatView
 /Export/StatDescriptions
+=======
+>>>>>>> 1f4c3d5dffb41856f70c979dfc8bd4e2f6e5135a
