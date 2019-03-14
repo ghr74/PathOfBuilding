@@ -256,7 +256,6 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 *.lnk
-<<<<<<< HEAD
 /Export/Tree/PassiveSkillGraph.psg
 /Export/Tree/passives
 /Export/Tree/skills-3.jpg
@@ -268,5 +267,3 @@ treeupdate.bat
 /Export/Data
 /Export/DatView
 /Export/StatDescriptions
-=======
->>>>>>> 1f4c3d5dffb41856f70c979dfc8bd4e2f6e5135a
