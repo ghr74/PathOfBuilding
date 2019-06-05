@@ -14,10 +14,7 @@ local m_sin = math.sin
 local m_cos = math.cos
 local m_pi = math.pi
 
-defaultTargetVersion = "2_6"
-liveTargetVersion = "3_0"
-targetVersionList = { "2_6", "3_0" }
-
+LoadModule("GameVersions")
 LoadModule("Modules/Common")
 LoadModule("Modules/Data")
 LoadModule("Modules/ModTools")
@@ -66,8 +63,10 @@ function main:Init()
 	end
 	
 	self.tree = { }
-	for _, targetVersion in ipairs(targetVersionList) do
-		self.tree[targetVersion] = new("PassiveTree", targetVersion)
+	for _, versionData in pairs(targetVersions) do
+		for _, treeVersion in ipairs(versionData.treeVersionList) do
+			self.tree[treeVersion] = new("PassiveTree", treeVersion)
+		end
 	end
 
 	ConPrintf("Loading item databases...")
@@ -408,6 +407,7 @@ function main:LoadSettings()
 				self:SetMode(node.attrib.mode, unpack(args))
 			elseif node.elem == "Accounts" then
 				self.lastAccountName = node.attrib.lastAccountName
+				self.lastRealm = node.attrib.lastRealm
 				for _, child in ipairs(node) do
 					if child.elem == "Account" then
 						self.gameAccounts[child.attrib.accountName] = {
@@ -480,7 +480,7 @@ function main:SaveSettings()
 		t_insert(mode, child)
 	end
 	t_insert(setXML, mode)
-	local accounts = { elem = "Accounts", attrib = { lastAccountName = self.lastAccountName } }
+	local accounts = { elem = "Accounts", attrib = { lastAccountName = self.lastAccountName, lastRealm = self.lastRealm } }
 	for accountName, account in pairs(self.gameAccounts) do
 		t_insert(accounts, { elem = "Account", attrib = { accountName = accountName, sessionID = account.sessionID } })
 	end
@@ -654,7 +654,7 @@ end
 function main:DrawBackground(viewPort)
 	SetDrawLayer(nil, -100)
 	SetDrawColor(0.5, 0.5, 0.5)
-	DrawImage(self.tree[defaultTargetVersion].assets.Background1.handle, viewPort.x, viewPort.y, viewPort.width, viewPort.height, 0, 0, viewPort.width / 100, viewPort.height / 100)
+	DrawImage(self.tree["2_6"].assets.Background1.handle, viewPort.x, viewPort.y, viewPort.width, viewPort.height, 0, 0, viewPort.width / 100, viewPort.height / 100)
 	SetDrawLayer(nil, 0)
 end
 
