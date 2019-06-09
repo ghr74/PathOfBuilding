@@ -1,3 +1,42 @@
+VERSION[1.4.146][2019/06/09]
+ * Fixed Blood and Sand having the wrong maximum gem level
+VERSION[1.4.145][2019/06/09]
+ * Fixed passive tree art
+VERSION[1.4.144][2019/06/09]
+ * Updated passive tree
+ * Fixed Shield Charge not getting the correct damage stats
+VERSION[1.4.143][2019/06/09]
+ * Fixed various weapon modifiers not working correctly
+ * Fixed error that could occur when comparing 3.6 and 3.7 trees
+ * Fixed the chain count modifier on Snakepit not applying correctly
+VERSION[1.4.142][2019/06/09]
+ * Added the following new gems:
+    * Berserk
+    * Bladestorm (the buffs from the storms can be enabled in the Skill Options section of the Configuration tab)
+	* Blood and Sand (you can switch stances in Skill Options)
+	* Chain Hook
+    * Dash
+	* Flesh and Stone (you can switch stances in Skill Options)
+	* Frostblink
+	* Perforate
+	* Precision
+	* Pride
+    * Steelskin
+	* Close Combat (mostly non-functional)
+	* Impale (the Impale mechanic is still unsupported)
+	* Pulverise
+	* Rage
+	* Shockwave
+ * Applied the skill reworks and balance changes for 3.7.0
+    * Note that Cast While Channelling will not work correctly for the time being due to some significant changes
+ * Updated item bases and mods for 3.7.0
+ * Applied the accuracy changes from 3.7.0
+VERSION[1.4.141][2019/06/06]
+ * Fixed Rage degeneration applying incorrectly (again)
+VERSION[1.4.140][2019/06/06]
+ * Fixed Rage degeneration applying incorrectly
+VERSION[1.4.139][2019/06/06]
+ * The Rage option in the Configuration tab will now correctly show when the relevant passives are allocated
 VERSION[1.4.138][2019/06/05]
  * Passive tree updated to 3.7.0
  * Added support for multiple passive tree versions in one build:

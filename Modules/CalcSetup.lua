@@ -186,7 +186,7 @@ function calcs.initEnv(build, mode, override)
 	-- Initialise modifier database with base values
 	local modDB = new("ModDB")
 	env.modDB = modDB
-	local classStats = build.spec.tree.characterData[env.classId]
+	local classStats = env.spec.tree.characterData[env.classId]
 	for _, stat in pairs({"Str","Dex","Int"}) do
 		modDB:NewMod(stat, "BASE", classStats["base_"..stat:lower()], "Base")
 	end
@@ -216,7 +216,6 @@ function calcs.initEnv(build, mode, override)
 	modDB:NewMod("Damage", "INC", 1, "Base", ModFlag.Attack, { type = "Multiplier", var = "Rage", limit = 50 }, { type = "Multiplier", var = "RageEffect" })
 	modDB:NewMod("Speed", "INC", 1, "Base", ModFlag.Attack, { type = "Multiplier", var = "Rage", limit = 25, div = 2 }, { type = "Multiplier", var = "RageEffect" })
 	modDB:NewMod("MovementSpeed", "INC", 1, "Base", { type = "Multiplier", var = "Rage", limit = 10, div = 5 }, { type = "Multiplier", var = "RageEffect" })
-	modDB:NewMod("LifeDegen", "BASE", 0.001, "Base", { type = "PerStat", stat = "Life" }, { type = "Multiplier", var = "Rage", limit = 50 }, { type = "Multiplier", var = "RageEffect" })
 	if build.targetVersion == "2_6" then
 		modDB:NewMod("ActiveTrapLimit", "BASE", 3, "Base")
 	else
@@ -233,6 +232,7 @@ function calcs.initEnv(build, mode, override)
 	else
 		modDB:NewMod("Damage", "MORE", 200, "Base", 0, KeywordFlag.Bleed, { type = "ActorCondition", actor = "enemy", var = "Moving" }, { type = "Condition", var = "NoExtraBleedDamageToMovingEnemy", neg = true })
 	end
+	modDB:NewMod("Condition:BloodStance", "FLAG", true, "Base", { type = "Condition", var = "SandStance", neg = true })
 
 	-- Add bandit mods
 	if build.targetVersion == "2_6" then
@@ -379,7 +379,7 @@ function calcs.initEnv(build, mode, override)
 					end
 				end } }
 				for _, func in ipairs(funcList) do
-					local node = build.spec.nodes[slot.nodeId]
+					local node = env.spec.nodes[slot.nodeId]
 					t_insert(env.radiusJewelList, {
 						nodes = node.nodesInRadius[item.jewelRadiusIndex],
 						func = func.func,
